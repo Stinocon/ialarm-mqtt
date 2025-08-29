@@ -2,6 +2,10 @@
 .github/workflows/*.yml
 .github/workflows/*.yaml
 
+# All YAML/YML files
+*.yml
+*.yaml
+
 # Configuration files
 *.config.js
 *.config.json
