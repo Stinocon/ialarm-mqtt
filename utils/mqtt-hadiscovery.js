@@ -1,8 +1,14 @@
 /* eslint-disable no-template-curly-in-string */
 
 import { MeianLogger } from 'ialarm'
-import { configHandler }  from './config-handler.js'
-import pjson from '../package.json' assert { type: 'json' }
+import { configHandler } from './config-handler.js'
+import { readFileSync } from 'fs'
+import { fileURLToPath } from 'url'
+import { dirname, join } from 'path'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const pjson = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf8'))
 
 export default function (config, zonesToConfig, reset, deviceInfo) {
   const logger = MeianLogger(config.verbose ? 'debug' : 'info')
@@ -20,7 +26,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
   causes in validate_mapping raise er.MultipleInvalid(errors) voluptuous.error.MultipleInvalid: expected a list @ data['device']['connections'][0]
   if(deviceInfo.mac){
     deviceConfig.connections = ['mac', deviceInfo.mac.toLowerCase()]
-  }*/
+  } */
 
   function getZoneDevice (zone) {
     return {
@@ -152,7 +158,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       }
 
       const stateTopic = _getTopic(config.topics.sensors.zone.state, {
-        zoneId: zoneId
+        zoneId
       })
 
       payload = {
@@ -172,7 +178,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
     }
     return {
       topic: _getTopic(topic, {
-        zoneId: zoneId
+        zoneId
       }),
       payload
     }
@@ -247,7 +253,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
     const zoneId = zone.id
     if (!reset) {
       const stateTopic = _getTopic(config.topics.sensors.zone.state, {
-        zoneId: zoneId
+        zoneId
       })
 
       payload = {
@@ -258,7 +264,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         payload_on: config.payloads.sensorOn,
         payload_off: config.payloads.sensorOff,
         command_topic: _getTopic(config.topics.alarm.bypass, {
-          zoneId: zoneId
+          zoneId
         }),
         unique_id: `${alarmId}_zone_${zone.id}_bypass`,
         icon: config.hadiscovery.bypass.icon,
@@ -268,7 +274,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
     }
     return {
       topic: _getTopic(config.hadiscovery.topics.bypassConfig, {
-        zoneId: zoneId
+        zoneId
       }),
       payload
     }
@@ -343,7 +349,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
     if (!reset) {
       // only 1 switch for all areas?
       const commandTopic = _getTopic(config.topics.alarm.command, {
-        areaId: areaId
+        areaId
       })
       payload = {
         name: `${deviceConfig.name} clean triggered`,
@@ -369,7 +375,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
     let payload = ''
     if (!reset) {
       const commandTopic = _getTopic(config.topics.alarm.command, {
-        areaId: areaId
+        areaId
       })
       payload = {
         name: `${deviceConfig.name}${config.server.areas > 1 ? ' Area ' + areaId : ''}`,
@@ -393,7 +399,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
     }
     return {
       topic: _getTopic(config.hadiscovery.topics.alarmConfig, {
-        areaId: areaId
+        areaId
       }),
       payload
     }
@@ -416,10 +422,10 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
     if (reset) {
       messages.push(configCleanup('${discoveryPrefix}/alarm_control_panel/ialarm/config'))
       messages.push(configCleanup('${discoveryPrefix}/sensor/ialarm/error/config'))
-      messages.push(configCleanup('ialarm/alarm/error')) 
+      messages.push(configCleanup('ialarm/alarm/error'))
     }
 
-    //iterating all 128 zones
+    // iterating all 128 zones
     const maxZones = configHandler.getMaxZones()
     for (let i = 0; i < maxZones; i++) {
       let zone

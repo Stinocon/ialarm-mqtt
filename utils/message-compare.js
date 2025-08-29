@@ -1,4 +1,3 @@
-
 export const MessageCompare = function (obj1, obj2) {
   function diffString (key, value1, value2) {
     return `${key}(oldvalue=${value1},newvalue=${value2})`

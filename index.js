@@ -1,4 +1,3 @@
-
 import { MeianSocket, MeianDataHandler, MeianLogger, MeianConnection, MeianStatusDecoder } from 'ialarm'
 import { MqttPublisher } from './utils/mqtt-publisher.js'
 import { configHandler } from './utils/config-handler.js'
