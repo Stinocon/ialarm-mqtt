@@ -82,10 +82,18 @@ jobs:
 
       - name: Log in to Container Registry
         uses: docker/login-action@v3
+        if: secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != ''
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Skip Docker login (no credentials)
+        if: secrets.DOCKER_USERNAME == '' || secrets.DOCKER_PASSWORD == ''
+        run: |
+          echo "⚠️  Docker credentials not configured. Skipping login."
+          echo "To enable Docker push, add DOCKER_USERNAME and DOCKER_PASSWORD secrets to this repository."
+          echo "For now, building image without pushing to registry."
 
       - name: Extract metadata
         id: meta
@@ -99,16 +107,24 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix={{branch}}-
 
-      - name: Build and push Docker image
+      - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          push: true
+          push: ${{ secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != '' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Build success notification
+        if: secrets.DOCKER_USERNAME == '' || secrets.DOCKER_PASSWORD == ''
+        run: |
+          echo "✅ Docker image built successfully!"
+          echo "📦 Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          echo "🏷️  Tags: ${{ steps.meta.outputs.tags }}"
+          echo "💡 To push to registry, configure Docker credentials in repository secrets."
 
   release:
     name: Create Release

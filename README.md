@@ -98,6 +98,8 @@ docker run -d \
 
 Once running, access the web interface at: `http://localhost:3000`
 
+> **Note**: If you encounter Docker credential issues in CI/CD, see [Docker Setup Guide](DOCKER_SETUP.md) for configuration instructions.
+
 ## 📋 Configuration
 
 ### Basic Configuration
