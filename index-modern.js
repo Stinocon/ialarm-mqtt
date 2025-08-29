@@ -3,19 +3,19 @@
  * Enhanced with web interface, health monitoring, and improved error handling
  */
 
-import { MeianSocket, MeianConnection } from 'ialarm'
-import { MqttPublisher } from './utils/mqtt-publisher.js'
-import { configHandler } from './utils/config-handler.js'
-import { logger } from './utils/logger.js'
-import { healthMonitor } from './utils/health-monitor.js'
-import { WebServer } from './web/server.js'
+import { MeianSocket, MeianConnection } from 'ialarm';
+import { MqttPublisher } from './utils/mqtt-publisher.js';
+import { configHandler } from './utils/config-handler.js';
+import { logger } from './utils/logger.js';
+import { healthMonitor } from './utils/health-monitor.js';
+import { WebServer } from './web/server.js';
 
 class IAlarmMQTTBridge {
-  constructor (config) {
-    this.config = config
-    this.logger = logger
-    this.healthMonitor = healthMonitor
-    this.webServer = null
+  constructor(config) {
+    this.config = config;
+    this.logger = logger;
+    this.healthMonitor = healthMonitor;
+    this.webServer = null;
 
     // State management
     this.status = {
@@ -23,57 +23,57 @@ class IAlarmMQTTBridge {
       mode: 'disarmed',
       zones: {},
       events: [],
-      lastUpdate: null
-    }
+      lastUpdate: null,
+    };
 
-    this.errorCount = 0
-    this.discovered = false
-    this.publisher = new MqttPublisher(config)
+    this.errorCount = 0;
+    this.discovered = false;
+    this.publisher = new MqttPublisher(config);
 
     // Connection management
-    this.socket = null
-    this.reconnectAttempts = 0
-    this.maxReconnectAttempts = 5
-    this.reconnectDelay = 5000
+    this.socket = null;
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 5;
+    this.reconnectDelay = 5000;
 
     // Initialize
-    this.initialize()
+    this.initialize();
   }
 
-  initialize () {
+  initialize() {
     try {
-      this.validateConfig()
-      this.setupSocket()
-      this.setupHealthChecks()
-      this.startWebServer()
-      this.connectToAlarm()
+      this.validateConfig();
+      this.setupSocket();
+      this.setupHealthChecks();
+      this.startWebServer();
+      this.connectToAlarm();
     } catch (error) {
-      this.logger.error('Initialization failed', { error: error.message })
-      process.exit(1)
+      this.logger.error('Initialization failed', { error: error.message });
+      process.exit(1);
     }
   }
 
-  validateConfig () {
+  validateConfig() {
     if (!this.config) {
-      throw new Error('Configuration is required')
+      throw new Error('Configuration is required');
     }
 
     if (!this.config.server?.host || !this.config.server?.port) {
-      throw new Error('Server host and port are required')
+      throw new Error('Server host and port are required');
     }
 
     if (!this.config.mqtt?.host) {
-      throw new Error('MQTT host is required')
+      throw new Error('MQTT host is required');
     }
   }
 
-  setupSocket () {
-    const maxZone = Math.max(...this.config.server.zones)
+  setupSocket() {
+    const maxZone = Math.max(...this.config.server.zones);
     const commandsLimits = {
       GetZone: maxZone,
       GetByWay: maxZone,
-      GetLog: 10
-    }
+      GetLog: 10,
+    };
 
     this.socket = new MeianSocket(
       this.config.server.host,
@@ -82,412 +82,412 @@ class IAlarmMQTTBridge {
       this.config.server.password,
       this.config.verbose ? 'debug' : 'info',
       commandsLimits
-    )
+    );
 
-    this.setupSocketEventHandlers()
+    this.setupSocketEventHandlers();
   }
 
-  setupSocketEventHandlers () {
+  setupSocketEventHandlers() {
     // Connection established
     this.socket.onConnected(async connectionResponse => {
       this.logger.info('TCP connection established', {
-        response: connectionResponse
-      })
-      this.healthMonitor.updateMetric('tcpConnected', true)
-      this.reconnectAttempts = 0
+        response: connectionResponse,
+      });
+      this.healthMonitor.updateMetric('tcpConnected', true);
+      this.reconnectAttempts = 0;
 
       // Initial setup
-      await this.performInitialSetup()
-    })
+      await this.performInitialSetup();
+    });
 
     // Command responses
     this.socket.onResponse(async commandResponse => {
       try {
-        const startTime = Date.now()
-        await this.handleCommandResponse(commandResponse)
-        this.healthMonitor.recordResponseTime(Date.now() - startTime)
+        const startTime = Date.now();
+        await this.handleCommandResponse(commandResponse);
+        this.healthMonitor.recordResponseTime(Date.now() - startTime);
         this.healthMonitor.updateMetric(
           'messageCount',
           this.healthMonitor.metrics.messageCount + 1
-        )
+        );
       } catch (error) {
-        this.handleError(error)
+        this.handleError(error);
       }
-    })
+    });
 
     // Connection errors
     this.socket.onError(error => {
-      this.logger.error('Socket error', { error: error.message })
-      this.healthMonitor.updateMetric('tcpConnected', false)
-      this.healthMonitor.recordError(error)
-      this.scheduleReconnect()
-    })
+      this.logger.error('Socket error', { error: error.message });
+      this.healthMonitor.updateMetric('tcpConnected', false);
+      this.healthMonitor.recordError(error);
+      this.scheduleReconnect();
+    });
 
     // Connection closed
     this.socket.onClose(() => {
-      this.logger.warn('TCP connection closed')
-      this.healthMonitor.updateMetric('tcpConnected', false)
-      this.scheduleReconnect()
-    })
+      this.logger.warn('TCP connection closed');
+      this.healthMonitor.updateMetric('tcpConnected', false);
+      this.scheduleReconnect();
+    });
   }
 
-  async performInitialSetup () {
+  async performInitialSetup() {
     try {
-      this.logger.info('Performing initial setup...')
+      this.logger.info('Performing initial setup...');
 
       // Get network information
-      await this.executeCommand('GetNet')
+      await this.executeCommand('GetNet');
 
       // Get zone information if enabled
       if (configHandler.isFeatureEnabled(this.config, 'zoneNames')) {
-        await this.executeCommand('GetZone')
+        await this.executeCommand('GetZone');
       }
 
       // Publish availability
-      this.publisher.publishAvailable(true)
-      this.healthMonitor.updateMetric('mqttConnected', true)
+      this.publisher.publishAvailable(true);
+      this.healthMonitor.updateMetric('mqttConnected', true);
 
       // Start polling
-      this.startPolling()
+      this.startPolling();
 
-      this.logger.info('Initial setup completed successfully')
+      this.logger.info('Initial setup completed successfully');
     } catch (error) {
-      this.logger.error('Initial setup failed', { error: error.message })
-      throw error
+      this.logger.error('Initial setup failed', { error: error.message });
+      throw error;
     }
   }
 
-  async handleCommandResponse (commandResponse) {
-    const payload = commandResponse.payloads?.data
+  async handleCommandResponse(commandResponse) {
+    const payload = commandResponse.payloads?.data;
 
     if (payload.GetNet) {
-      this.parseNet(payload.GetNet)
+      this.parseNet(payload.GetNet);
     }
 
     if (payload.GetZone) {
-      this.parseZones(payload.GetZone)
+      this.parseZones(payload.GetZone);
     }
 
     if (payload.GetByWay) {
-      this.parseByWay(payload.GetByWay)
+      this.parseByWay(payload.GetByWay);
     }
 
     if (payload.GetLog) {
-      this.parseLog(payload.GetLog)
+      this.parseLog(payload.GetLog);
     }
 
     // Update status timestamp
-    this.status.lastUpdate = new Date().toISOString()
+    this.status.lastUpdate = new Date().toISOString();
 
     // Broadcast to web clients
     if (this.webServer) {
       this.webServer.broadcast({
         type: 'status',
-        data: this.getStatus()
-      })
+        data: this.getStatus(),
+      });
     }
   }
 
-  async executeCommand (commands, args) {
+  async executeCommand(commands, args) {
     return new Promise((resolve, reject) => {
       try {
-        const delay = MeianConnection.status.isReady() ? 0 : 200
-        const requestTime = Date.now()
+        const delay = MeianConnection.status.isReady() ? 0 : 200;
+        const requestTime = Date.now();
 
         const commandInterval = setInterval(async () => {
-          const executionTime = Date.now()
+          const executionTime = Date.now();
 
           if (
             MeianConnection.status.isReady() ||
             executionTime - requestTime > 10000
           ) {
-            clearInterval(commandInterval)
+            clearInterval(commandInterval);
             try {
-              await this.socket.executeCommand(commands, args)
-              resolve()
+              await this.socket.executeCommand(commands, args);
+              resolve();
             } catch (error) {
-              reject(error)
+              reject(error);
             }
           } else {
             this.logger.debug('Waiting for connection to be ready', {
               command: commands,
-              elapsed: executionTime - requestTime
-            })
+              elapsed: executionTime - requestTime,
+            });
           }
-        }, delay)
+        }, delay);
       } catch (error) {
-        reject(error)
+        reject(error);
       }
-    })
+    });
   }
 
-  parseNet (netData) {
+  parseNet(netData) {
     try {
-      this.logger.info('Network information received', { netData })
+      this.logger.info('Network information received', { netData });
       // Update device info if needed
       if (this.config.deviceInfo) {
-        this.config.deviceInfo = { ...this.config.deviceInfo, ...netData }
+        this.config.deviceInfo = { ...this.config.deviceInfo, ...netData };
       }
     } catch (error) {
-      this.logger.error('Error parsing network data', { error: error.message })
+      this.logger.error('Error parsing network data', { error: error.message });
     }
   }
 
-  parseZones (zoneData) {
+  parseZones(zoneData) {
     try {
       this.logger.info('Zone information received', {
-        zoneCount: Object.keys(zoneData).length
-      })
+        zoneCount: Object.keys(zoneData).length,
+      });
 
       // Update zones in status
       Object.keys(zoneData).forEach(zoneId => {
-        const zone = zoneData[zoneId]
+        const zone = zoneData[zoneId];
         this.status.zones[zoneId] = {
           id: zoneId,
           name: zone.name || `Zone ${zoneId}`,
           status: zone.status || 'unknown',
-          type: zone.type || 'unknown'
-        }
-      })
+          type: zone.type || 'unknown',
+        };
+      });
 
       // Publish zone updates
-      this.publisher.publishZones(this.status.zones)
+      this.publisher.publishZones(this.status.zones);
 
       // Broadcast to web clients
       if (this.webServer) {
         this.webServer.broadcast({
           type: 'zones',
-          data: Object.values(this.status.zones)
-        })
+          data: Object.values(this.status.zones),
+        });
       }
     } catch (error) {
-      this.logger.error('Error parsing zone data', { error: error.message })
+      this.logger.error('Error parsing zone data', { error: error.message });
     }
   }
 
-  parseByWay (byWayData) {
+  parseByWay(byWayData) {
     try {
-      this.logger.info('ByWay information received', { byWayData })
+      this.logger.info('ByWay information received', { byWayData });
 
       // Update alarm status
       if (byWayData.armed !== undefined) {
-        this.status.armed = byWayData.armed
+        this.status.armed = byWayData.armed;
         this.status.mode =
-          byWayData.mode || (byWayData.armed ? 'away' : 'disarmed')
+          byWayData.mode || (byWayData.armed ? 'away' : 'disarmed');
 
         // Publish status update
-        this.publisher.publishStatus(this.status)
+        this.publisher.publishStatus(this.status);
 
         // Add to events
         this.addEvent(
           `Alarm ${this.status.armed ? 'armed' : 'disarmed'} in ${this.status.mode} mode`
-        )
+        );
       }
     } catch (error) {
-      this.logger.error('Error parsing ByWay data', { error: error.message })
+      this.logger.error('Error parsing ByWay data', { error: error.message });
     }
   }
 
-  parseLog (logData) {
+  parseLog(logData) {
     try {
       this.logger.info('Log information received', {
-        logCount: logData.length
-      })
+        logCount: logData.length,
+      });
 
       // Process log entries
       logData.forEach(entry => {
-        this.addEvent(entry.message || 'Log entry', entry)
-      })
+        this.addEvent(entry.message || 'Log entry', entry);
+      });
     } catch (error) {
-      this.logger.error('Error parsing log data', { error: error.message })
+      this.logger.error('Error parsing log data', { error: error.message });
     }
   }
 
-  addEvent (message, data = {}) {
+  addEvent(message, data = {}) {
     const event = {
       id: Date.now().toString(),
       message,
       timestamp: new Date().toISOString(),
-      data
-    }
+      data,
+    };
 
-    this.status.events.unshift(event)
+    this.status.events.unshift(event);
 
     // Keep only last 100 events
     if (this.status.events.length > 100) {
-      this.status.events = this.status.events.slice(0, 100)
+      this.status.events = this.status.events.slice(0, 100);
     }
 
     // Broadcast to web clients
     if (this.webServer) {
       this.webServer.broadcast({
         type: 'events',
-        data: this.status.events
-      })
+        data: this.status.events,
+      });
     }
   }
 
-  startPolling () {
-    this.logger.info('Starting alarm polling')
+  startPolling() {
+    this.logger.info('Starting alarm polling');
 
     const pollInterval = setInterval(() => {
       if (!this.healthMonitor.metrics.tcpConnected) {
-        this.logger.warn('Skipping poll - TCP not connected')
-        return
+        this.logger.warn('Skipping poll - TCP not connected');
+        return;
       }
 
       try {
-        this.executeCommand('GetByWay')
-        this.healthMonitor.updateMetric('lastSuccessfulPoll', Date.now())
+        this.executeCommand('GetByWay');
+        this.healthMonitor.updateMetric('lastSuccessfulPoll', Date.now());
       } catch (error) {
-        this.handleError(error)
+        this.handleError(error);
       }
-    }, this.config.pollingInterval || 30000)
+    }, this.config.pollingInterval || 30000);
 
     // Store interval for cleanup
-    this.pollInterval = pollInterval
+    this.pollInterval = pollInterval;
   }
 
-  connectToAlarm () {
+  connectToAlarm() {
     this.logger.info('Connecting to alarm system', {
       host: this.config.server.host,
-      port: this.config.server.port
-    })
-    this.socket.connect()
+      port: this.config.server.port,
+    });
+    this.socket.connect();
   }
 
-  scheduleReconnect () {
+  scheduleReconnect() {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      this.reconnectAttempts++
-      const delay = this.reconnectDelay * this.reconnectAttempts
+      this.reconnectAttempts++;
+      const delay = this.reconnectDelay * this.reconnectAttempts;
 
       this.logger.info('Scheduling reconnect', {
         attempt: this.reconnectAttempts,
-        delay
-      })
+        delay,
+      });
 
       setTimeout(() => {
-        this.connectToAlarm()
-      }, delay)
+        this.connectToAlarm();
+      }, delay);
     } else {
-      this.logger.error('Max reconnect attempts reached')
-      this.healthMonitor.updateMetric('tcpConnected', false)
+      this.logger.error('Max reconnect attempts reached');
+      this.healthMonitor.updateMetric('tcpConnected', false);
     }
   }
 
-  handleError (error) {
-    this.errorCount++
+  handleError(error) {
+    this.errorCount++;
     this.logger.error('Operation failed', {
       error: error.message,
-      errorCount: this.errorCount
-    })
+      errorCount: this.errorCount,
+    });
 
-    this.healthMonitor.recordError(error)
-    this.addEvent(`Error: ${error.message}`)
+    this.healthMonitor.recordError(error);
+    this.addEvent(`Error: ${error.message}`);
   }
 
-  setupHealthChecks () {
+  setupHealthChecks() {
     // Register health checks
     this.healthMonitor.registerHealthCheck('tcp_connection', () => {
-      return this.healthMonitor.metrics.tcpConnected
-    })
+      return this.healthMonitor.metrics.tcpConnected;
+    });
 
     this.healthMonitor.registerHealthCheck('mqtt_connection', () => {
-      return this.healthMonitor.metrics.mqttConnected
-    })
+      return this.healthMonitor.metrics.mqttConnected;
+    });
 
     this.healthMonitor.registerHealthCheck('polling_health', () => {
       const timeSinceLastPoll =
-        Date.now() - this.healthMonitor.metrics.lastSuccessfulPoll
-      return timeSinceLastPoll < 60000 // 1 minute
-    })
+        Date.now() - this.healthMonitor.metrics.lastSuccessfulPoll;
+      return timeSinceLastPoll < 60000; // 1 minute
+    });
   }
 
-  async startWebServer () {
+  async startWebServer() {
     try {
-      this.webServer = new WebServer(this, this.config)
-      await this.webServer.start(this.config.webPort || 3000)
-      this.logger.info('Web server started successfully')
+      this.webServer = new WebServer(this, this.config);
+      await this.webServer.start(this.config.webPort || 3000);
+      this.logger.info('Web server started successfully');
     } catch (error) {
-      this.logger.error('Failed to start web server', { error: error.message })
+      this.logger.error('Failed to start web server', { error: error.message });
     }
   }
 
   // Public API methods for web interface
-  getStatus () {
+  getStatus() {
     return {
       armed: this.status.armed,
       mode: this.status.mode,
       lastUpdate: this.status.lastUpdate,
       tcpConnected: this.healthMonitor.metrics.tcpConnected,
-      mqttConnected: this.healthMonitor.metrics.mqttConnected
+      mqttConnected: this.healthMonitor.metrics.mqttConnected,
+    };
+  }
+
+  getZones() {
+    return Object.values(this.status.zones);
+  }
+
+  getEvents() {
+    return this.status.events;
+  }
+
+  async armAlarm(mode) {
+    try {
+      this.logger.info('Arming alarm', { mode });
+      await this.executeCommand('Arm', { mode });
+      this.addEvent(`Alarm armed in ${mode} mode`);
+      return { success: true };
+    } catch (error) {
+      this.logger.error('Failed to arm alarm', { error: error.message });
+      throw error;
     }
   }
 
-  getZones () {
-    return Object.values(this.status.zones)
-  }
-
-  getEvents () {
-    return this.status.events
-  }
-
-  async armAlarm (mode) {
+  async disarmAlarm(code) {
     try {
-      this.logger.info('Arming alarm', { mode })
-      await this.executeCommand('Arm', { mode })
-      this.addEvent(`Alarm armed in ${mode} mode`)
-      return { success: true }
+      this.logger.info('Disarming alarm');
+      await this.executeCommand('Disarm', { code });
+      this.addEvent('Alarm disarmed');
+      return { success: true };
     } catch (error) {
-      this.logger.error('Failed to arm alarm', { error: error.message })
-      throw error
-    }
-  }
-
-  async disarmAlarm (code) {
-    try {
-      this.logger.info('Disarming alarm')
-      await this.executeCommand('Disarm', { code })
-      this.addEvent('Alarm disarmed')
-      return { success: true }
-    } catch (error) {
-      this.logger.error('Failed to disarm alarm', { error: error.message })
-      throw error
+      this.logger.error('Failed to disarm alarm', { error: error.message });
+      throw error;
     }
   }
 
   // Cleanup method
-  async shutdown () {
-    this.logger.info('Shutting down iAlarm MQTT bridge')
+  async shutdown() {
+    this.logger.info('Shutting down iAlarm MQTT bridge');
 
     if (this.pollInterval) {
-      clearInterval(this.pollInterval)
+      clearInterval(this.pollInterval);
     }
 
     if (this.webServer) {
-      await this.webServer.stop()
+      await this.webServer.stop();
     }
 
     if (this.socket) {
-      this.socket.disconnect()
+      this.socket.disconnect();
     }
 
-    this.logger.info('Shutdown completed')
+    this.logger.info('Shutdown completed');
   }
 }
 
 // Export the main function
 export const ialarmMqtt = config => {
-  return new IAlarmMQTTBridge(config)
-}
+  return new IAlarmMQTTBridge(config);
+};
 
 // Handle graceful shutdown
 process.on('SIGINT', async () => {
-  logger.info('Received SIGINT, shutting down gracefully')
-  process.exit(0)
-})
+  logger.info('Received SIGINT, shutting down gracefully');
+  process.exit(0);
+});
 
 process.on('SIGTERM', async () => {
-  logger.info('Received SIGTERM, shutting down gracefully')
-  process.exit(0)
-})
+  logger.info('Received SIGTERM, shutting down gracefully');
+  process.exit(0);
+});

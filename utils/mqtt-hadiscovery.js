@@ -1,68 +1,68 @@
 /* eslint-disable no-template-curly-in-string */
 
-import { MeianLogger } from 'ialarm'
-import { configHandler } from './config-handler.js'
-import { readFileSync } from 'fs'
-import { fileURLToPath } from 'url'
-import { dirname, join } from 'path'
+import { MeianLogger } from 'ialarm';
+import { configHandler } from './config-handler.js';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 const pjson = JSON.parse(
   readFileSync(join(__dirname, '../package.json'), 'utf8')
-)
+);
 
 export default function (config, zonesToConfig, reset, deviceInfo) {
-  const logger = MeianLogger(config.verbose ? 'debug' : 'info')
+  const logger = MeianLogger(config.verbose ? 'debug' : 'info');
 
-  const alarmId = `alarm_mqtt_${(deviceInfo && deviceInfo.mac && deviceInfo.mac.split(':').join('')) || 'meian'}`
+  const alarmId = `alarm_mqtt_${(deviceInfo && deviceInfo.mac && deviceInfo.mac.split(':').join('')) || 'meian'}`;
 
   const deviceConfig = {
     identifiers: `${alarmId}`,
     manufacturer: 'Meian',
     model: deviceInfo.name,
     name: `${config.name || deviceInfo.name || 'Meian alarm'}`,
-    sw_version: `ialarm-mqtt ${pjson.version}`
-  }
+    sw_version: `ialarm-mqtt ${pjson.version}`,
+  };
   /*
   causes in validate_mapping raise er.MultipleInvalid(errors) voluptuous.error.MultipleInvalid: expected a list @ data['device']['connections'][0]
   if(deviceInfo.mac){
     deviceConfig.connections = ['mac', deviceInfo.mac.toLowerCase()]
   } */
 
-  function getZoneDevice (zone) {
+  function getZoneDevice(zone) {
     return {
       ...deviceConfig,
       identifiers: [`${alarmId}_zone_${zone.id}`],
       name: `${deviceConfig.name} ${config.hadiscovery.zoneName} ${zone.id} ${zone.name}`,
-      model: zone.type
-    }
+      model: zone.type,
+    };
   }
 
-  function getAvailability () {
+  function getAvailability() {
     return [
       {
         topic: config.topics.availability,
         payload_available: config.payloads.alarmAvailable,
-        payload_not_available: config.payloads.alarmNotvailable
-      }
-    ]
+        payload_not_available: config.payloads.alarmNotvailable,
+      },
+    ];
   }
 
   const _getTopic = function (topicTemplate, data) {
     if (!data) {
-      data = {}
+      data = {};
     }
     data.discoveryPrefix =
-      config.hadiscovery.discoveryPrefix || 'homeassistant'
-    let topic = topicTemplate
+      config.hadiscovery.discoveryPrefix || 'homeassistant';
+    let topic = topicTemplate;
     for (const key in data) {
-      const value = data[key]
+      const value = data[key];
       // ${key}
-      topic = topic.replace('${' + key + '}', value)
+      topic = topic.replace('${' + key + '}', value);
     }
-    return topic
-  }
+    return topic;
+  };
 
   /**
    * binary sensor for "fault" property
@@ -80,41 +80,41 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       'fault',
       config.hadiscovery.topics.sensorConfig,
       false
-    )
+    );
 
     if (!reset) {
-      const zoneName = config.hadiscovery.zoneName
+      const zoneName = config.hadiscovery.zoneName;
 
       // optional
-      let icon
-      let deviceClass
+      let icon;
+      let deviceClass;
       // priority to zone config
       const zoneConfig = configHandler.getZoneOverride(
         config,
         zone.id,
         zone.typeId
-      )
+      );
       if (zoneConfig) {
-        icon = zoneConfig.icon
-        deviceClass = zoneConfig.device_class
+        icon = zoneConfig.icon;
+        deviceClass = zoneConfig.device_class;
       }
 
       const payload = {
         ...message.payload,
         name: zoneName + ' ' + zone.id + ' ' + zone.name,
-        unique_id: `${alarmId}_zone_${zone.id}`
-      }
+        unique_id: `${alarmId}_zone_${zone.id}`,
+      };
 
       // icon is not supported on binary sensor, only switches, light, sensor, etc
       if (payload.state_topic.indexOf('/binary_sensor/') === -1) {
-        payload.icon = icon
+        payload.icon = icon;
       }
-      payload.device_class = deviceClass || 'safety' // default
+      payload.device_class = deviceClass || 'safety'; // default
 
-      message.payload = payload
+      message.payload = payload;
     }
-    return message
-  }
+    return message;
+  };
 
   /**
    * binary sensor for "lowbat" property
@@ -131,8 +131,8 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       'lowbat',
       config.hadiscovery.topics.sensorBatteryConfig,
       false
-    )
-  }
+    );
+  };
 
   /**
    * binary sensor for "wirelessLoss" property
@@ -149,8 +149,8 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       'wirelessLoss',
       config.hadiscovery.topics.sensorConnectivityConfig,
       true
-    )
-  }
+    );
+  };
 
   /**
    * binary sensor for "alarm" property
@@ -167,8 +167,8 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       'alarm',
       config.hadiscovery.topics.sensorAlarmConfig,
       false
-    )
-  }
+    );
+  };
 
   /**
    * Binary sensors based on alarm booleans
@@ -190,21 +190,21 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
     topic,
     defaultOn
   ) {
-    let payload = ''
-    const zoneId = zone.id
+    let payload = '';
+    const zoneId = zone.id;
     if (!reset) {
-      let zoneName = config.hadiscovery.zoneName
+      let zoneName = config.hadiscovery.zoneName;
       if (!zoneName) {
-        zoneName = 'Zone'
+        zoneName = 'Zone';
       }
-      let valueTemplate = `{{ '${config.payloads.sensorOn}' if value_json.${statusProperty} else '${config.payloads.sensorOff}' }}`
+      let valueTemplate = `{{ '${config.payloads.sensorOn}' if value_json.${statusProperty} else '${config.payloads.sensorOff}' }}`;
       if (defaultOn) {
-        valueTemplate = `{{  '${config.payloads.sensorOff}' if value_json.${statusProperty} else '${config.payloads.sensorOn}' }}`
+        valueTemplate = `{{  '${config.payloads.sensorOff}' if value_json.${statusProperty} else '${config.payloads.sensorOn}' }}`;
       }
 
       const stateTopic = _getTopic(config.topics.sensors.zone.state, {
-        zoneId
-      })
+        zoneId,
+      });
 
       payload = {
         name: type + ' ' + zoneName + ' ' + zone.id + ' ' + zone.name,
@@ -218,23 +218,23 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         state_topic: stateTopic,
         unique_id: `${alarmId}_zone_${zone.id}_${type.toLowerCase()}`,
         device: getZoneDevice(zone),
-        qos: config.hadiscovery.sensors_qos
-      }
+        qos: config.hadiscovery.sensors_qos,
+      };
     }
     return {
       topic: _getTopic(topic, {
-        zoneId
+        zoneId,
       }),
-      payload
-    }
-  }
+      payload,
+    };
+  };
 
   /**
    * Log event (last)
    * @returns
    */
   const configSensorEvents = function () {
-    let payload = ''
+    let payload = '';
     if (!reset) {
       payload = {
         name: config.hadiscovery.events.name
@@ -248,21 +248,21 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         unique_id: `${alarmId}_events`,
         icon: config.hadiscovery.events.icon,
         device: deviceConfig,
-        qos: config.hadiscovery.sensors_qos
-      }
+        qos: config.hadiscovery.sensors_qos,
+      };
     }
     return {
       topic: _getTopic(config.hadiscovery.topics.eventsConfig),
-      payload
-    }
-  }
+      payload,
+    };
+  };
 
   /**
    * Error log
    * @returns
    */
   const configConnectionStatus = function () {
-    let payload = ''
+    let payload = '';
     if (!reset) {
       payload = {
         name: `${deviceConfig.name} comunication status`,
@@ -276,14 +276,14 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         unique_id: `${alarmId}_connection_status`,
         icon: 'mdi:alert-circle',
         device: deviceConfig,
-        qos: config.hadiscovery.sensors_qos
-      }
+        qos: config.hadiscovery.sensors_qos,
+      };
     }
     return {
       topic: _getTopic(config.hadiscovery.topics.connectionConfig),
-      payload
-    }
-  }
+      payload,
+    };
+  };
 
   /**
    * Bypass switch
@@ -292,14 +292,14 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
    * @returns
    */
   const configSwitchBypass = function (zone, index) {
-    const zoneName = config.hadiscovery.zoneName || 'Zone'
-    const bypassName = config.hadiscovery.bypass.name || 'Bypass'
-    let payload = ''
-    const zoneId = zone.id
+    const zoneName = config.hadiscovery.zoneName || 'Zone';
+    const bypassName = config.hadiscovery.bypass.name || 'Bypass';
+    let payload = '';
+    const zoneId = zone.id;
     if (!reset) {
       const stateTopic = _getTopic(config.topics.sensors.zone.state, {
-        zoneId
-      })
+        zoneId,
+      });
 
       payload = {
         name: bypassName + ' ' + zoneName + ' ' + zone.id + ' ' + zone.name,
@@ -309,21 +309,21 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         payload_on: config.payloads.sensorOn,
         payload_off: config.payloads.sensorOff,
         command_topic: _getTopic(config.topics.alarm.bypass, {
-          zoneId
+          zoneId,
         }),
         unique_id: `${alarmId}_zone_${zone.id}_bypass`,
         icon: config.hadiscovery.bypass.icon,
         device: getZoneDevice(zone),
-        qos: config.hadiscovery.sensors_qos
-      }
+        qos: config.hadiscovery.sensors_qos,
+      };
     }
     return {
       topic: _getTopic(config.hadiscovery.topics.bypassConfig, {
-        zoneId
+        zoneId,
       }),
-      payload
-    }
-  }
+      payload,
+    };
+  };
 
   /**
    * switch to clear cached values
@@ -332,7 +332,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
    * @returns
    */
   const configSwitchClearCache = function () {
-    let payload = ''
+    let payload = '';
     if (!reset) {
       payload = {
         name: `${deviceConfig.name} clean cache`,
@@ -345,14 +345,14 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         unique_id: `${alarmId}_clear_cache`,
         icon: 'mdi:reload-alert',
         device: deviceConfig,
-        qos: config.hadiscovery.sensors_qos
-      }
+        qos: config.hadiscovery.sensors_qos,
+      };
     }
     return {
       topic: _getTopic(config.hadiscovery.topics.clearCacheConfig),
-      payload
-    }
-  }
+      payload,
+    };
+  };
 
   /**
    * switch to clear discovery
@@ -361,7 +361,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
    * @returns
    */
   const configSwitchClearDiscovery = function () {
-    let payload = ''
+    let payload = '';
     if (!reset) {
       payload = {
         name: `${deviceConfig.name} clean discovery`,
@@ -374,14 +374,14 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         unique_id: `${alarmId}_clear_discovery`,
         icon: 'mdi:refresh',
         device: deviceConfig,
-        qos: config.hadiscovery.sensors_qos
-      }
+        qos: config.hadiscovery.sensors_qos,
+      };
     }
     return {
       topic: _getTopic(config.hadiscovery.topics.clearDiscoveryConfig),
-      payload
-    }
-  }
+      payload,
+    };
+  };
 
   /**
    * switch to cancel triggered sensors alarms
@@ -390,12 +390,12 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
    * @returns
    */
   const configSwitchCancelTriggered = function (areaId) {
-    let payload = ''
+    let payload = '';
     if (!reset) {
       // only 1 switch for all areas?
       const commandTopic = _getTopic(config.topics.alarm.command, {
-        areaId
-      })
+        areaId,
+      });
       payload = {
         name: `${deviceConfig.name} clean triggered`,
         availability: getAvailability(),
@@ -407,21 +407,21 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         unique_id: `${alarmId}_cancel_trigger`,
         icon: 'mdi:alarm-light',
         device: deviceConfig,
-        qos: config.hadiscovery.sensors_qos
-      }
+        qos: config.hadiscovery.sensors_qos,
+      };
     }
     return {
       topic: _getTopic(config.hadiscovery.topics.clearTriggeredConfig),
-      payload
-    }
-  }
+      payload,
+    };
+  };
 
   const configIAlarm = function (areaId) {
-    let payload = ''
+    let payload = '';
     if (!reset) {
       const commandTopic = _getTopic(config.topics.alarm.command, {
-        areaId
-      })
+        areaId,
+      });
       payload = {
         name: `${deviceConfig.name}${config.server.areas > 1 ? ' Area ' + areaId : ''}`,
         unique_id: `${alarmId}_unit${config.server.areas > 1 ? '_area' + areaId : ''}`,
@@ -435,68 +435,68 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         payload_arm_away: config.payloads.alarm.armAway,
         payload_available: config.payloads.alarmAvailable,
         payload_not_available: config.payloads.alarmNotvailable,
-        qos: config.hadiscovery.alarm_qos
-      }
+        qos: config.hadiscovery.alarm_qos,
+      };
       // optional
       if (config.hadiscovery.code) {
-        payload.code = config.hadiscovery.code
+        payload.code = config.hadiscovery.code;
       }
     }
     return {
       topic: _getTopic(config.hadiscovery.topics.alarmConfig, {
-        areaId
+        areaId,
       }),
-      payload
-    }
-  }
+      payload,
+    };
+  };
 
-  function configCleanup (topic, zone) {
+  function configCleanup(topic, zone) {
     return {
       topic: _getTopic(topic, {
         zoneId: zone && zone.id,
-        discoveryPrefix: config.hadiscovery.discoveryPrefix
+        discoveryPrefix: config.hadiscovery.discoveryPrefix,
       }),
-      payload: ''
-    }
+      payload: '',
+    };
   }
 
   this.createMessages = function () {
-    const messages = []
+    const messages = [];
 
     // cleanup old topics structures
     if (reset) {
       messages.push(
         configCleanup('${discoveryPrefix}/alarm_control_panel/ialarm/config')
-      )
+      );
       messages.push(
         configCleanup('${discoveryPrefix}/sensor/ialarm/error/config')
-      )
-      messages.push(configCleanup('ialarm/alarm/error'))
+      );
+      messages.push(configCleanup('ialarm/alarm/error'));
     }
 
     // iterating all 128 zones
-    const maxZones = configHandler.getMaxZones()
+    const maxZones = configHandler.getMaxZones();
     for (let i = 0; i < maxZones; i++) {
-      let zone
+      let zone;
       if (reset) {
-        zone = { id: i + 1 }
+        zone = { id: i + 1 };
       } else {
-        zone = zonesToConfig[i]
+        zone = zonesToConfig[i];
         // zone not found
         if (!zone) {
           logger.log(
             'error',
             `HA discovery config: ignoring zone ${i} (GetZone did not return any info on this zone or it is filtered out via server.zones in config)`
-          )
-          continue
+          );
+          continue;
         }
         // disabled/not in use zone
         if (zone.typeId === 0) {
           logger.log(
             'debug',
             `HA discovery config: ignoring unused zone ${zone.id} (it's configured as disabled on the alarm - typeId = 0)`
-          )
-          continue
+          );
+          continue;
         }
       }
 
@@ -507,52 +507,52 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
             '${discoveryPrefix}/binary_sensor/ialarm/${zoneId}/config',
             zone
           )
-        )
+        );
         messages.push(
           configCleanup(
             '${discoveryPrefix}/sensor/ialarm${zoneId}/battery/config',
             zone
           )
-        )
+        );
         // messages.push(configCleanup("${discoveryPrefix}/sensor/${zoneId}/battery/config", zone));
       }
 
       // binary sensors
       if (reset || configHandler.isFeatureEnabled(config, 'sensors')) {
-        messages.push(configSensorFault(zone, i))
-        messages.push(configSensorBattery(zone, i))
-        messages.push(configSensorAlarm(zone, i))
-        messages.push(configSensorConnectivity(zone, i))
+        messages.push(configSensorFault(zone, i));
+        messages.push(configSensorBattery(zone, i));
+        messages.push(configSensorAlarm(zone, i));
+        messages.push(configSensorConnectivity(zone, i));
       }
 
       // bypass switches
       if (reset || configHandler.isFeatureEnabled(config, 'bypass')) {
-        messages.push(configSwitchBypass(zone, i))
+        messages.push(configSwitchBypass(zone, i));
       }
     }
 
     // switch to clear cache and discovery configs
-    messages.push(configSwitchClearCache())
-    messages.push(configSwitchClearDiscovery())
+    messages.push(configSwitchClearCache());
+    messages.push(configSwitchClearDiscovery());
 
     // ok/errors
-    messages.push(configConnectionStatus())
+    messages.push(configConnectionStatus());
 
     if (reset || configHandler.isFeatureEnabled(config, 'armDisarm')) {
       // cancel alarm triggered ( TODO multiple switch for all areas?)
-      messages.push(configSwitchCancelTriggered(1))
+      messages.push(configSwitchCancelTriggered(1));
 
       // multiple alarm state for multiple area
       for (let areaId = 1; areaId <= config.server.areas; areaId++) {
-        messages.push(configIAlarm(areaId))
+        messages.push(configIAlarm(areaId));
       }
     }
 
     // last event
     if (reset || configHandler.isFeatureEnabled(config, 'events')) {
-      messages.push(configSensorEvents())
+      messages.push(configSensorEvents());
     }
 
-    return messages
-  }
+    return messages;
+  };
 }

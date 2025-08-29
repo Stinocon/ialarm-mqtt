@@ -1,76 +1,76 @@
-import { MeianLogger } from 'ialarm'
-import IAlarmHaDiscovery from './mqtt-hadiscovery.js'
-import { configHandler } from './config-handler.js'
-import mqtt from 'mqtt'
-import { MessageCompare } from './message-compare.js'
+import { MeianLogger } from 'ialarm';
+import IAlarmHaDiscovery from './mqtt-hadiscovery.js';
+import { configHandler } from './config-handler.js';
+import mqtt from 'mqtt';
+import { MessageCompare } from './message-compare.js';
 
 export const MqttPublisher = function (config) {
-  const logger = MeianLogger(config.verbose ? 'debug' : 'info')
+  const logger = MeianLogger(config.verbose ? 'debug' : 'info');
 
-  let client
+  let client;
 
   const _cache = {
     data: {},
     enabled: config.mqtt.cache !== undefined,
     time: (function () {
-      const expr = config.mqtt.cache
+      const expr = config.mqtt.cache;
       if (expr) {
-        let molt = 0
+        let molt = 0;
 
         if (expr.endsWith('s')) {
-          molt = 1000
+          molt = 1000;
         } else if (expr.endsWith('m')) {
-          molt = 60000
+          molt = 60000;
         } else if (expr.endsWith('h')) {
-          molt = 60000 * 60
+          molt = 60000 * 60;
         } else if (expr.endsWith('d')) {
-          molt = 60000 * 60 * 24
+          molt = 60000 * 60 * 24;
         } else {
-          logger.info('Using default cache: 5m')
+          logger.info('Using default cache: 5m');
           // default 5 min
-          return 5 * 60000
+          return 5 * 60000;
         }
-        return expr.substring(0, expr.length - 1) * molt
+        return expr.substring(0, expr.length - 1) * molt;
       }
-      return 0
-    })()
-  }
+      return 0;
+    })(),
+  };
 
   const _resetCache = function (topic) {
     if (topic) {
-      _cache.data[topic].lastChecked = 0
+      _cache.data[topic].lastChecked = 0;
     } else if (_cache.data) {
       for (const key in _cache.data) {
-        const item = _cache.data[key]
+        const item = _cache.data[key];
         if (item) {
-          item.lastChecked = 0
+          item.lastChecked = 0;
         }
       }
     } else {
-      _cache.data = {}
+      _cache.data = {};
     }
-  }
+  };
 
-  this.resetCache = _resetCache
+  this.resetCache = _resetCache;
 
   const _decodeStatus = function (status) {
     try {
-      const currentStatus = status.toLowerCase()
-      const values = config.payloads.alarmDecoder
+      const currentStatus = status.toLowerCase();
+      const values = config.payloads.alarmDecoder;
       if (values && currentStatus) {
         for (const key in values) {
           if (Object.prototype.hasOwnProperty.call(values, key)) {
-            const item = values[key]
+            const item = values[key];
             if (Array.isArray(item)) {
               for (let index = 0; index < item.length; index++) {
-                const element = item[index]
+                const element = item[index];
                 if (element.toLowerCase() === currentStatus) {
-                  return key
+                  return key;
                 }
               }
             } else {
               if (item.toLowerCase() === currentStatus) {
-                return key
+                return key;
               }
             }
           }
@@ -79,24 +79,24 @@ export const MqttPublisher = function (config) {
     } catch (error) {
       logger.error(
         `error decoding status: ${error && error.message} on ${JSON.stringify(status)}`
-      )
+      );
     }
-    return status
-  }
+    return status;
+  };
 
   const _publishAndLog = function (topic, data, options) {
-    _publish(topic, data, options, true)
-  }
+    _publish(topic, data, options, true);
+  };
 
   const _cacheExpireDate = function (date) {
-    return new Date(date.getTime() + _cache.time)
-  }
+    return new Date(date.getTime() + _cache.time);
+  };
 
   const getMessageDiffs = function (topic, obj2) {
     // HA config topic
     if (topic.endsWith('/config')) {
       // needs republishing
-      return ['config']
+      return ['config'];
     }
 
     // cache empty or expired
@@ -105,34 +105,34 @@ export const MqttPublisher = function (config) {
       !_cache.data[topic] ||
       !_cache.data[topic].lastChecked ||
       // cache expired
-      new Date() > _cacheExpireDate(_cache.data[topic].lastChecked)
+      new Date() > _cacheExpireDate(_cache.data[topic].lastChecked);
     if (expired) {
       // needs republishing
-      return ['expired']
+      return ['expired'];
     }
 
     // deep check
-    const obj1 = _cache.data[topic].payload
-    return MessageCompare(obj1, obj2)
-  }
+    const obj1 = _cache.data[topic].payload;
+    return MessageCompare(obj1, obj2);
+  };
 
   const _publish = function (topic, data, options, verboseLog) {
-    const differences = getMessageDiffs(topic, data)
+    const differences = getMessageDiffs(topic, data);
 
-    let dataLog
+    let dataLog;
     if (verboseLog) {
       if (data) {
         if (config.verbose) {
-          dataLog = JSON.stringify(data)
+          dataLog = JSON.stringify(data);
         } else if (typeof data === 'string') {
-          dataLog = data
+          dataLog = data;
         } else if (Array.isArray(data)) {
-          dataLog = 'Array of ' + data.length + ' elements'
+          dataLog = 'Array of ' + data.length + ' elements';
         } else {
-          dataLog = 'Object with ' + Object.keys(data).length + ' keys'
+          dataLog = 'Object with ' + Object.keys(data).length + ' keys';
         }
       } else {
-        dataLog = data
+        dataLog = data;
       }
     }
 
@@ -141,35 +141,35 @@ export const MqttPublisher = function (config) {
       //   const expire = _cache.data[topic] ? _cacheExpireDate(_cache.data[topic] && _cache.data[topic].lastChecked) : 0
       //   logger.debug(`Ignored ${topic} (expire ${expire}): same data as previous message - ${JSON.stringify(data)}`)
       // }
-      return
+      return;
     }
 
     if (client) {
-      options = options || {}
-      options.retain = config.mqtt.retain || false
+      options = options || {};
+      options.retain = config.mqtt.retain || false;
 
-      let payload = data
+      let payload = data;
       if (typeof data !== 'string') {
-        payload = JSON.stringify(data)
+        payload = JSON.stringify(data);
       }
-      client.publish(topic, payload, options)
+      client.publish(topic, payload, options);
       // cache the original data, ignoring config
       if (!topic.endsWith('/config')) {
         _cache.data[topic] = {
           payload: data,
-          lastChecked: (data && data.lastChecked) || new Date()
-        }
-        const expire = _cacheExpireDate(_cache.data[topic].lastChecked)
-        logger.info(`Caching ${topic} until ${expire}`)
+          lastChecked: (data && data.lastChecked) || new Date(),
+        };
+        const expire = _cacheExpireDate(_cache.data[topic].lastChecked);
+        logger.info(`Caching ${topic} until ${expire}`);
       }
 
       logger.info(
         `sending topic '${topic}' (changed: ${JSON.stringify(differences)}): ${dataLog}`
-      )
+      );
     } else {
-      logger.error(topic + ' - error publishing...not connected')
+      logger.error(topic + ' - error publishing...not connected');
     }
-  }
+  };
 
   this.connectAndSubscribe = function (
     alarmCommands,
@@ -180,10 +180,10 @@ export const MqttPublisher = function (config) {
       config.mqtt.clientId ||
       'ialarm-mqtt-' +
         Math.random().toString(36).substring(2, 15) +
-        Math.random().toString(36).substring(2, 15)
+        Math.random().toString(36).substring(2, 15);
     logger.info(
       `MQTT connecting to broker ${config.mqtt.host}:${config.mqtt.port} with cliendId ${clientId}`
-    )
+    );
     client = mqtt.connect(
       'mqtt://' + config.mqtt.host + ':' + config.mqtt.port,
       {
@@ -192,79 +192,79 @@ export const MqttPublisher = function (config) {
         clientId,
         will: {
           topic: config.topics.availability,
-          payload: config.payloads.alarmNotvailable
-        }
+          payload: config.payloads.alarmNotvailable,
+        },
       }
-    )
+    );
 
     client.on('connect', function () {
       logger.info(
         `MQTT connected to broker ${config.mqtt.host}:${config.mqtt.port} with cliendId ${clientId}`
-      )
+      );
       const topicsToSubscribe = [
         config.topics.alarm.discovery,
-        config.topics.alarm.resetCache
-      ]
+        config.topics.alarm.resetCache,
+      ];
       // arm/disarm/cancel
       if (configHandler.isFeatureEnabled(config, 'armDisarm')) {
-        topicsToSubscribe.push(getAreaTopic(config.topics.alarm.command, '+'))
+        topicsToSubscribe.push(getAreaTopic(config.topics.alarm.command, '+'));
       }
       // bypass
       if (configHandler.isFeatureEnabled(config, 'bypass')) {
-        topicsToSubscribe.push(getZoneTopic(config.topics.alarm.bypass, '+'))
+        topicsToSubscribe.push(getZoneTopic(config.topics.alarm.bypass, '+'));
       }
 
       if (topicsToSubscribe.length > 0) {
-        logger.info(`subscribing to ${JSON.stringify(topicsToSubscribe)}`)
+        logger.info(`subscribing to ${JSON.stringify(topicsToSubscribe)}`);
         client.subscribe(topicsToSubscribe, function (err) {
           if (err) {
-            logger.error('Error subscribing' + err.toString())
+            logger.error('Error subscribing' + err.toString());
           }
-          _resetCache()
-        })
+          _resetCache();
+        });
       } else {
-        logger.info('No topic to subscribe to')
+        logger.info('No topic to subscribe to');
       }
 
-      onConnected()
-    })
+      onConnected();
+    });
 
     client.on('message', function (topic, message) {
-      let command
+      let command;
       try {
-        command = message.toString()
+        command = message.toString();
       } catch (error) {
-        command = message
+        command = message;
       }
-      logger.info("received topic '" + topic + "' : ", command)
+      logger.info("received topic '" + topic + "' : ", command);
 
       if (topic === config.topics.alarm.discovery) {
         // any payload
-        logger.info('Requested new HA discovery...')
+        logger.info('Requested new HA discovery...');
         if (alarmCommands.discovery && command) {
           const on =
             command &&
             (command.toLowerCase() === 'on' ||
               command === 1 ||
               command === 'true' ||
-              command === true)
-          alarmCommands.discovery(on)
+              command === true);
+          alarmCommands.discovery(on);
         }
         _publish(config.topics.alarm.configStatus, {
           cacheClear: 'OFF',
           discoveryClear: 'OFF',
-          cancel: 'OFF'
-        })
+          cancel: 'OFF',
+        });
       } else if (topic === config.topics.alarm.resetCache) {
         // any payload
         if (alarmCommands.resetCache) {
-          alarmCommands.resetCache()
+          alarmCommands.resetCache();
         }
         _publish(config.topics.alarm.configStatus, {
           cacheClear: 'OFF',
           discoveryClear: 'OFF',
-          cancel: 'OFF'
-        })
+          cancel: 'OFF',
+        });
       } else {
         // arm/disarm topic
         const armRegex = new RegExp(
@@ -273,18 +273,18 @@ export const MqttPublisher = function (config) {
             /* eslint-disable-next-line no-template-curly-in-string */
             .replace('${areaId}', '(\\d{1,2})'),
           'gm'
-        )
-        const armMatch = armRegex.exec(topic)
+        );
+        const armMatch = armRegex.exec(topic);
         if (armMatch) {
-          const numArea = armMatch[1]
+          const numArea = armMatch[1];
           logger.info(
             'Alarm arm/disarm/cancel: area ' + numArea + ' (' + command + ')'
-          )
-          const ialarmCommand = _decodeStatus(command)
+          );
+          const ialarmCommand = _decodeStatus(command);
           if (alarmCommands.armDisarm) {
-            alarmCommands.armDisarm(ialarmCommand, numArea)
-            logger.info('Executed: ' + ialarmCommand + ' (' + command + ')')
-            return
+            alarmCommands.armDisarm(ialarmCommand, numArea);
+            logger.info('Executed: ' + ialarmCommand + ' (' + command + ')');
+            return;
           }
         }
 
@@ -296,21 +296,21 @@ export const MqttPublisher = function (config) {
             /* eslint-disable-next-line no-template-curly-in-string */
             .replace('${zoneId}', '(\\d{1,2})'),
           'gm'
-        )
-        const match = topicRegex.exec(topic)
+        );
+        const match = topicRegex.exec(topic);
         if (match) {
-          const zoneNumber = match[1]
+          const zoneNumber = match[1];
           logger.info(
             'Alarm bypass: zone ' + zoneNumber + ' (' + command + ')'
-          )
+          );
 
-          const accepted = ['1', '0', 'true', 'false', 'on', 'off']
-          let knownCommand = false
+          const accepted = ['1', '0', 'true', 'false', 'on', 'off'];
+          let knownCommand = false;
           for (let index = 0; index < accepted.length; index++) {
-            const cmd = accepted[index]
+            const cmd = accepted[index];
             if (cmd === command.toLowerCase()) {
-              knownCommand = true
-              break
+              knownCommand = true;
+              break;
             }
           }
           if (!knownCommand) {
@@ -319,63 +319,63 @@ export const MqttPublisher = function (config) {
                 zoneNumber +
                 ' ignored invalid command: ' +
                 command
-            )
-            return
+            );
+            return;
           }
           const bypass =
             command === '1' ||
             command.toLowerCase() === 'true' ||
-            command.toLowerCase() === 'on'
+            command.toLowerCase() === 'on';
           if (bypass) {
-            logger.info('Alarm bypass zone ' + zoneNumber)
+            logger.info('Alarm bypass zone ' + zoneNumber);
           } else {
-            logger.info('Alarm bypass removed from zone ' + zoneNumber)
+            logger.info('Alarm bypass removed from zone ' + zoneNumber);
           }
           if (alarmCommands.bypassZone) {
-            alarmCommands.bypassZone(zoneNumber, bypass)
+            alarmCommands.bypassZone(zoneNumber, bypass);
           }
         }
       }
-    })
+    });
 
     client.on('error', function (err) {
-      logger.error(`Error connecting to MQTT broker: ${err && err.message}`)
+      logger.error(`Error connecting to MQTT broker: ${err && err.message}`);
       if (onDisconnected) {
-        onDisconnected()
+        onDisconnected();
       }
-      client.end()
-    })
+      client.end();
+    });
+  };
+
+  function getSensorTopic(zoneId) {
+    return getZoneTopic(config.topics.sensors.zone.state, zoneId);
   }
 
-  function getSensorTopic (zoneId) {
-    return getZoneTopic(config.topics.sensors.zone.state, zoneId)
-  }
-
-  function getZoneTopic (topic, zoneId) {
+  function getZoneTopic(topic, zoneId) {
     // eslint-disable-next-line no-template-curly-in-string
-    return topic && topic.replace('${zoneId}', zoneId)
+    return topic && topic.replace('${zoneId}', zoneId);
   }
 
-  function getAreaTopic (topic, areaId) {
+  function getAreaTopic(topic, areaId) {
     // eslint-disable-next-line no-template-curly-in-string
-    return topic && topic.replace('${areaId}', areaId)
+    return topic && topic.replace('${areaId}', areaId);
   }
 
   this.publishStateSensor = function (zones) {
     if (!zones) {
-      logger.info('No zone found to publish')
-      return
+      logger.info('No zone found to publish');
+      return;
     }
 
     if (!config.topics.sensors) {
       // don't publish sensors
       logger.warn(
         "config file has no 'config.topics.sensors' configured. Skipping."
-      )
-      return
+      );
+      return;
     }
 
-    const configuredZones = zones.length
+    const configuredZones = zones.length;
 
     // one payload with all sensors data (sensors attrs)
     if (
@@ -383,15 +383,15 @@ export const MqttPublisher = function (config) {
       config.topics.sensors.topicType === 'state'
     ) {
       // legacy state: array of zones
-      _publishAndLog(config.topics.sensors.state, zones)
+      _publishAndLog(config.topics.sensors.state, zones);
     }
 
     // multiple payload with single sensor data based on zone.id to avoid misplaced index
     if (config.hadiscovery) {
       for (let i = 0; i < configuredZones; i++) {
-        const zone = zones[i]
+        const zone = zones[i];
         // full zone status (only if changed)
-        this.publishSensor(zone)
+        this.publishSensor(zone);
       }
     }
 
@@ -407,64 +407,64 @@ export const MqttPublisher = function (config) {
           "' for " +
           configuredZones +
           ' zones'
-      )
+      );
       logger.debug(
         "sending topic '" +
           config.topics.sensors.zone.active +
           "' for " +
           configuredZones +
           ' zones'
-      )
+      );
       logger.debug(
         "sending topic '" +
           config.topics.sensors.zone.lowBattery +
           "' for " +
           configuredZones +
           ' zones'
-      )
+      );
       logger.debug(
         "sending topic '" +
           config.topics.sensors.zone.fault +
           "' for " +
           configuredZones +
           ' zones'
-      )
+      );
 
       for (let i = 0; i < configuredZones; i++) {
-        const zone = zones[i]
-        let pub = _publish
+        const zone = zones[i];
+        let pub = _publish;
         if (config.verbose) {
-          pub = _publishAndLog
+          pub = _publishAndLog;
         }
 
         // single zone properties
         pub(
           getZoneTopic(config.topics.sensors.zone.alarm, zone.id),
           zone.alarm ? config.payloads.sensorOn : config.payloads.sensorOff
-        )
+        );
         pub(
           getZoneTopic(config.topics.sensors.zone.active, zone.id),
           zone.bypass ? config.payloads.sensorOn : config.payloads.sensorOff
-        )
+        );
         pub(
           getZoneTopic(config.topics.sensors.zone.lowBattery, zone.id),
           zone.lowbat ? config.payloads.sensorOn : config.payloads.sensorOff
-        )
+        );
         pub(
           getZoneTopic(config.topics.sensors.zone.fault, zone.id),
           zone.fault ? config.payloads.sensorOn : config.payloads.sensorOff
-        )
+        );
       }
     }
-  }
+  };
 
   /**
    * publish single sensor state
    * @param {*} zone
    */
   this.publishSensor = function (zoneData) {
-    _publishAndLog(getSensorTopic(zoneData.id), zoneData)
-  }
+    _publishAndLog(getSensorTopic(zoneData.id), zoneData);
+  };
 
   /**
    * publish single sensor state using cache and updating only changed properties (example: push notification)
@@ -473,54 +473,54 @@ export const MqttPublisher = function (config) {
    */
   this.updateStateSensor = function (zoneId, changed) {
     if (changed) {
-      const topic = getSensorTopic(zoneId)
+      const topic = getSensorTopic(zoneId);
       const zoneData = (_cache.data[topic] || { payload: { id: zoneId } })
-        .payload
+        .payload;
       this.publishSensor({
         ...zoneData,
-        ...changed
-      })
+        ...changed,
+      });
       // allows next GetByWay to send full data
-      _resetCache(topic)
+      _resetCache(topic);
     }
-  }
+  };
 
   this.publishStateIAlarm = function (status) {
-    const topic = config.topics.alarm.state
+    const topic = config.topics.alarm.state;
     if (status) {
       // merging old statuses (status_1, status_2, etc) and new status (status_1, status_3, etc)
-      const oldStatus = (_cache.data[topic] || { payload: {} }).payload
+      const oldStatus = (_cache.data[topic] || { payload: {} }).payload;
       status = {
         ...oldStatus,
-        ...status
-      }
+        ...status,
+      };
       for (const statusNumber in status) {
         // decode status
-        const areaStatus = status[statusNumber]
+        const areaStatus = status[statusNumber];
         // if (!(areaStatus)) {
         //   logger.info(`******** DEBUG ******* No AREA STATUS on : ${statusNumber}=${JSON.stringify(areaStatus)}`)
         // }
-        const alarmState = _decodeStatus(areaStatus)
+        const alarmState = _decodeStatus(areaStatus);
         status[statusNumber] =
           (config.payloads.alarm && config.payloads.alarm[alarmState]) ||
-          areaStatus
+          areaStatus;
       }
     }
-    _publishAndLog(topic, status)
-  }
+    _publishAndLog(topic, status);
+  };
 
   this.publishAvailable = function (presence) {
-    const m = {}
-    m.topic = config.topics.availability
+    const m = {};
+    m.topic = config.topics.availability;
     m.payload = presence
       ? config.payloads.alarmAvailable
-      : config.payloads.alarmNotvailable
-    _publish(m.topic, m.payload)
-  }
+      : config.payloads.alarmNotvailable;
+    _publish(m.topic, m.payload);
+  };
 
   this.publishConnectionStatus = function (connected, errorMessage, stack) {
     if (errorMessage) {
-      logger.debug(`Publishing connection status: ${errorMessage}`, stack)
+      logger.debug(`Publishing connection status: ${errorMessage}`, stack);
     }
 
     _publish(config.topics.alarm.configStatus, {
@@ -532,17 +532,17 @@ export const MqttPublisher = function (config) {
         connected,
         message: errorMessage || 'OK',
         stack: stack || '',
-        date: new Date()
-      }
-    })
-  }
+        date: new Date(),
+      },
+    });
+  };
 
   this.publishEvent = function (data) {
-    const m = {}
-    m.topic = config.topics.alarm.event
-    m.payload = data
-    _publish(m.topic, m.payload)
-  }
+    const m = {};
+    m.topic = config.topics.alarm.event;
+    m.payload = data;
+    _publish(m.topic, m.payload);
+  };
 
   this.publishHomeAssistantMqttDiscovery = function (zones, on, deviceInfo) {
     // Reset of 128 zones
@@ -551,14 +551,14 @@ export const MqttPublisher = function (config) {
       zones,
       true,
       deviceInfo
-    ).createMessages()
+    ).createMessages();
     for (let index = 0; index < messages.length; index++) {
-      const m = messages[index]
-      _publishAndLog(m.topic, m.payload, { retain: true })
+      const m = messages[index];
+      _publishAndLog(m.topic, m.payload, { retain: true });
     }
 
     if (on) {
-      logger.info('Setting up Home assistant discovery...')
+      logger.info('Setting up Home assistant discovery...');
       // let's wait HA processes all the entity reset, then submit again the discovered entity
       setTimeout(function () {
         // mqtt discovery messages to publish
@@ -567,12 +567,12 @@ export const MqttPublisher = function (config) {
           zones,
           false,
           deviceInfo
-        ).createMessages()
+        ).createMessages();
         for (let index = 0; index < messages.length; index++) {
-          const m = messages[index]
-          _publishAndLog(m.topic, m.payload, { retain: true }) // config
+          const m = messages[index];
+          _publishAndLog(m.topic, m.payload, { retain: true }); // config
         }
-      }, 5000)
+      }, 5000);
     }
-  }
-}
+  };
+};

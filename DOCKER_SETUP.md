@@ -36,11 +36,13 @@ For better security, use a Docker Hub access token instead of your password:
 ## 🚀 Workflow Behavior
 
 ### With Credentials Configured
+
 - ✅ Docker login successful
 - ✅ Image pushed to Docker Hub
 - ✅ Full CI/CD pipeline
 
 ### Without Credentials
+
 - ⚠️ Docker login skipped
 - ✅ Image built successfully
 - ℹ️ Helpful notification message
@@ -53,6 +55,7 @@ For better security, use a Docker Hub access token instead of your password:
 **Image Name**: `stinocon/ialarm-mqtt`
 
 ### Available Tags
+
 - `latest` - Latest commit on master branch
 - `vX.Y.Z` - Semantic version tags
 - `master-<sha>` - Branch-specific tags
@@ -76,6 +79,7 @@ For better security, use a Docker Hub access token instead of your password:
 ### Verification Steps
 
 1. Check secrets are configured:
+
    ```bash
    # In GitHub repository settings
    Settings → Secrets and variables → Actions
