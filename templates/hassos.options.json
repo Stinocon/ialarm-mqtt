@@ -1,43 +1,41 @@
 {
-    "verbose": true,
-    "name": "iAlarm",
-    "server": {
-        "host": "192.168.1.81",
-        "port": 18034,
-        "username": "admin",
-        "password": "password",
-        "zones": [
-            17
-        ],
-        "polling_status": 5000
-    },
-    "mqtt": {
-        "host": "192.168.1.82",
-        "port": 1883,
-        "username": "admin",
-        "password": "password",
-        "clientId": "ialarm-mqtt",
-        "cache": "5m",
-        "retain": true
-    },
-    "hadiscovery": {
-        "code": 1234,
-        "zoneName": "Zona"
-    },
-    "events": {
-        "name": "last event",
-        "icon": "mdi:message-alert"
-    },
-    "bypass": {
-        "name": "Bypass",
-        "icon": "mdi:lock-open"
-    },
-    "zones": [
-        {
-            "number": "39",
-            "contactType": "NC",
-            "device_class": "moisture",
-            "statusProperty": "fault"
-        }
-    ]
+  "verbose": true,
+  "name": "iAlarm",
+  "server": {
+    "host": "192.168.1.81",
+    "port": 18034,
+    "username": "admin",
+    "password": "password",
+    "zones": [17],
+    "polling_status": 5000
+  },
+  "mqtt": {
+    "host": "192.168.1.82",
+    "port": 1883,
+    "username": "admin",
+    "password": "password",
+    "clientId": "ialarm-mqtt",
+    "cache": "5m",
+    "retain": true
+  },
+  "hadiscovery": {
+    "code": 1234,
+    "zoneName": "Zona"
+  },
+  "events": {
+    "name": "last event",
+    "icon": "mdi:message-alert"
+  },
+  "bypass": {
+    "name": "Bypass",
+    "icon": "mdi:lock-open"
+  },
+  "zones": [
+    {
+      "number": "39",
+      "contactType": "NC",
+      "device_class": "moisture",
+      "statusProperty": "fault"
+    }
+  ]
 }

@@ -16,19 +16,19 @@ function getBaseDir () {
 }
 
 /**
-* Add to config all default values if missing
-*/
+ * Add to config all default values if missing
+ */
 function initDefaults (config, configFile) {
   const logger = MeianLogger(config.verbose ? 'debug' : 'info')
 
   /**
-       * Check or init a config value
-      * @param {*} object
-      * @param {*} paths
-      * @param {*} index
-      * @param {*} defaultValue
-      * @returns
-      */
+   * Check or init a config value
+   * @param {*} object
+   * @param {*} paths
+   * @param {*} index
+   * @param {*} defaultValue
+   * @returns
+   */
   const _checkConfig = function (object, paths, index, defaultValue) {
     if (!index) {
       index = 0
@@ -41,10 +41,14 @@ function initDefaults (config, configFile) {
     if (!exists) {
       if (defaultValue !== undefined && index === paths.length - 1) {
         // create default
-        logger.warn(`Config value "${JSON.stringify(paths)}" missing on ${configFile} using default: "${defaultValue}"`)
+        logger.warn(
+          `Config value "${JSON.stringify(paths)}" missing on ${configFile} using default: "${defaultValue}"`
+        )
         object[key] = defaultValue
       } else {
-        throw new Error(`subscribe error: ${configFile} is missing ${paths[index]} on ${JSON.stringify(paths)}. See: ${JSON.stringify(config.topics)}`)
+        throw new Error(
+          `subscribe error: ${configFile} is missing ${paths[index]} on ${JSON.stringify(paths)}. See: ${JSON.stringify(config.topics)}`
+        )
       }
     }
     _checkConfig(object[key], paths, index + 1, defaultValue)
@@ -62,8 +66,22 @@ function initDefaults (config, configFile) {
     _checkConfig(config, ['server', 'showUnnamedZones'], 0, true) // default true
     _checkConfig(config, ['server', 'areas'], 0, 1)
     _checkConfig(config, ['server', 'delay'], 0, 200)
-    _checkConfig(config, ['server', 'polling_status'], 0, (config.server && config.server.polling && config.server.polling.status) || 5000)
-    _checkConfig(config, ['server', 'features'], 0, ['armDisarm', 'sensors', 'events', 'bypass', 'zoneNames'])
+    _checkConfig(
+      config,
+      ['server', 'polling_status'],
+      0,
+      (config.server &&
+        config.server.polling &&
+        config.server.polling.status) ||
+        5000
+    )
+    _checkConfig(config, ['server', 'features'], 0, [
+      'armDisarm',
+      'sensors',
+      'events',
+      'bypass',
+      'zoneNames'
+    ])
     _checkConfig(config, ['mqtt', 'port'])
     _checkConfig(config, ['mqtt', 'host'])
     _checkConfig(config, ['mqtt', 'username'])
@@ -72,24 +90,84 @@ function initDefaults (config, configFile) {
     _checkConfig(config, ['mqtt', 'cache'], 0, '5m')
     _checkConfig(config, ['mqtt', 'retain'], 0, true)
     _checkConfig(config, ['topics'], 0, {})
-    _checkConfig(config, ['topics', 'availability'], 0, 'ialarm/alarm/availability')
+    _checkConfig(
+      config,
+      ['topics', 'availability'],
+      0,
+      'ialarm/alarm/availability'
+    )
     _checkConfig(config, ['topics', 'alarm'], 0, {})
-    _checkConfig(config, ['topics', 'alarm', 'command'], 0, 'ialarm/alarm/area/${areaId}/set')
+    _checkConfig(
+      config,
+      ['topics', 'alarm', 'command'],
+      0,
+      'ialarm/alarm/area/${areaId}/set'
+    )
     _checkConfig(config, ['topics', 'alarm', 'state'], 0, 'ialarm/alarm/state')
     _checkConfig(config, ['topics', 'alarm', 'event'], 0, 'ialarm/alarm/event')
-    _checkConfig(config, ['topics', 'alarm', 'bypass'], 0, 'ialarm/alarm/zone/${zoneId}/bypass')
-    _checkConfig(config, ['topics', 'alarm', 'discovery'], 0, 'ialarm/alarm/discovery')
-    _checkConfig(config, ['topics', 'alarm', 'resetCache'], 0, 'ialarm/alarm/resetCache')
-    _checkConfig(config, ['topics', 'alarm', 'configStatus'], 0, 'ialarm/alarm/configStatus')
+    _checkConfig(
+      config,
+      ['topics', 'alarm', 'bypass'],
+      0,
+      'ialarm/alarm/zone/${zoneId}/bypass'
+    )
+    _checkConfig(
+      config,
+      ['topics', 'alarm', 'discovery'],
+      0,
+      'ialarm/alarm/discovery'
+    )
+    _checkConfig(
+      config,
+      ['topics', 'alarm', 'resetCache'],
+      0,
+      'ialarm/alarm/resetCache'
+    )
+    _checkConfig(
+      config,
+      ['topics', 'alarm', 'configStatus'],
+      0,
+      'ialarm/alarm/configStatus'
+    )
     _checkConfig(config, ['topics', 'sensors'], 0, {})
     _checkConfig(config, ['topics', 'sensors', 'topicType'], 0, 'state')
-    _checkConfig(config, ['topics', 'sensors', 'state'], 0, 'ialarm/sensors/state')
+    _checkConfig(
+      config,
+      ['topics', 'sensors', 'state'],
+      0,
+      'ialarm/sensors/state'
+    )
     _checkConfig(config, ['topics', 'sensors', 'zone'], 0, {})
-    _checkConfig(config, ['topics', 'sensors', 'zone', 'state'], 0, 'ialarm/sensors/zone_${zoneId}')
-    _checkConfig(config, ['topics', 'sensors', 'zone', 'alarm'], 0, 'ialarm/sensors/zone_${zoneId}/alarm')
-    _checkConfig(config, ['topics', 'sensors', 'zone', 'active'], 0, 'ialarm/sensors/zone_${zoneId}/wirelessLoss')
-    _checkConfig(config, ['topics', 'sensors', 'zone', 'lowBattery'], 0, 'ialarm/sensors/zone_${zoneId}/lowbat')
-    _checkConfig(config, ['topics', 'sensors', 'zone', 'fault'], 0, 'ialarm/sensors/zone_${zoneId}/fault')
+    _checkConfig(
+      config,
+      ['topics', 'sensors', 'zone', 'state'],
+      0,
+      'ialarm/sensors/zone_${zoneId}'
+    )
+    _checkConfig(
+      config,
+      ['topics', 'sensors', 'zone', 'alarm'],
+      0,
+      'ialarm/sensors/zone_${zoneId}/alarm'
+    )
+    _checkConfig(
+      config,
+      ['topics', 'sensors', 'zone', 'active'],
+      0,
+      'ialarm/sensors/zone_${zoneId}/wirelessLoss'
+    )
+    _checkConfig(
+      config,
+      ['topics', 'sensors', 'zone', 'lowBattery'],
+      0,
+      'ialarm/sensors/zone_${zoneId}/lowbat'
+    )
+    _checkConfig(
+      config,
+      ['topics', 'sensors', 'zone', 'fault'],
+      0,
+      'ialarm/sensors/zone_${zoneId}/fault'
+    )
     _checkConfig(config, ['payloads'], 0, {})
     _checkConfig(config, ['payloads', 'alarmAvailable'], 0, 'online')
     _checkConfig(config, ['payloads', 'alarmNotvailable'], 0, 'offline')
@@ -115,21 +193,9 @@ function initDefaults (config, configFile) {
         'arm_stay',
         'armed_stay'
       ],
-      disarm: [
-        'disarm',
-        'disarmed',
-        'D'
-      ],
-      cancel: [
-        'cancel',
-        'canceled',
-        'C'
-      ],
-      triggered: [
-        'trigger',
-        'triggered',
-        'T'
-      ]
+      disarm: ['disarm', 'disarmed', 'D'],
+      cancel: ['cancel', 'canceled', 'C'],
+      triggered: ['trigger', 'triggered', 'T']
     })
     _checkConfig(config, ['payloads', 'alarm'], 0, {
       armAway: 'armed_away',
@@ -143,30 +209,106 @@ function initDefaults (config, configFile) {
 
     _checkConfig(config, ['hadiscovery'], 0, {})
     _checkConfig(config, ['hadiscovery', 'enabled'], 0, true)
-    _checkConfig(config, ['hadiscovery', 'discoveryPrefix'], 0, 'homeassistant')
+    _checkConfig(
+      config,
+      ['hadiscovery', 'discoveryPrefix'],
+      0,
+      'homeassistant'
+    )
     _checkConfig(config, ['hadiscovery', 'topics'], 0, {})
-    _checkConfig(config, ['hadiscovery', 'topics', 'alarmConfig'], 0, '${discoveryPrefix}/alarm_control_panel/ialarm_${areaId}/config')
-    _checkConfig(config, ['hadiscovery', 'topics', 'eventsConfig'], 0, '${discoveryPrefix}/sensor/ialarm/events/config')
-    _checkConfig(config, ['hadiscovery', 'topics', 'connectionConfig'], 0, '${discoveryPrefix}/binary_sensor/ialarm/connection/config')
-    _checkConfig(config, ['hadiscovery', 'topics', 'sensorConfig'], 0, '${discoveryPrefix}/binary_sensor/ialarm_zone_${zoneId}/fault/config')
-    _checkConfig(config, ['hadiscovery', 'topics', 'sensorBatteryConfig'], 0, '${discoveryPrefix}/binary_sensor/ialarm_zone_${zoneId}/battery/config')
-    _checkConfig(config, ['hadiscovery', 'topics', 'sensorAlarmConfig'], 0, '${discoveryPrefix}/binary_sensor/ialarm_zone_${zoneId}/alarm/config')
-    _checkConfig(config, ['hadiscovery', 'topics', 'sensorConnectivityConfig'], 0, '${discoveryPrefix}/binary_sensor/ialarm_zone_${zoneId}/connectivity/config')
-    _checkConfig(config, ['hadiscovery', 'topics', 'bypassConfig'], 0, '${discoveryPrefix}/switch/ialarm/${zoneId}/config')
-    _checkConfig(config, ['hadiscovery', 'topics', 'clearCacheConfig'], 0, '${discoveryPrefix}/switch/ialarm/clear_cache/config')
-    _checkConfig(config, ['hadiscovery', 'topics', 'clearDiscoveryConfig'], 0, '${discoveryPrefix}/switch/ialarm/clear_discovery/config')
-    _checkConfig(config, ['hadiscovery', 'topics', 'clearTriggeredConfig'], 0, '${discoveryPrefix}/switch/ialarm/clear_triggered/config')
+    _checkConfig(
+      config,
+      ['hadiscovery', 'topics', 'alarmConfig'],
+      0,
+      '${discoveryPrefix}/alarm_control_panel/ialarm_${areaId}/config'
+    )
+    _checkConfig(
+      config,
+      ['hadiscovery', 'topics', 'eventsConfig'],
+      0,
+      '${discoveryPrefix}/sensor/ialarm/events/config'
+    )
+    _checkConfig(
+      config,
+      ['hadiscovery', 'topics', 'connectionConfig'],
+      0,
+      '${discoveryPrefix}/binary_sensor/ialarm/connection/config'
+    )
+    _checkConfig(
+      config,
+      ['hadiscovery', 'topics', 'sensorConfig'],
+      0,
+      '${discoveryPrefix}/binary_sensor/ialarm_zone_${zoneId}/fault/config'
+    )
+    _checkConfig(
+      config,
+      ['hadiscovery', 'topics', 'sensorBatteryConfig'],
+      0,
+      '${discoveryPrefix}/binary_sensor/ialarm_zone_${zoneId}/battery/config'
+    )
+    _checkConfig(
+      config,
+      ['hadiscovery', 'topics', 'sensorAlarmConfig'],
+      0,
+      '${discoveryPrefix}/binary_sensor/ialarm_zone_${zoneId}/alarm/config'
+    )
+    _checkConfig(
+      config,
+      ['hadiscovery', 'topics', 'sensorConnectivityConfig'],
+      0,
+      '${discoveryPrefix}/binary_sensor/ialarm_zone_${zoneId}/connectivity/config'
+    )
+    _checkConfig(
+      config,
+      ['hadiscovery', 'topics', 'bypassConfig'],
+      0,
+      '${discoveryPrefix}/switch/ialarm/${zoneId}/config'
+    )
+    _checkConfig(
+      config,
+      ['hadiscovery', 'topics', 'clearCacheConfig'],
+      0,
+      '${discoveryPrefix}/switch/ialarm/clear_cache/config'
+    )
+    _checkConfig(
+      config,
+      ['hadiscovery', 'topics', 'clearDiscoveryConfig'],
+      0,
+      '${discoveryPrefix}/switch/ialarm/clear_discovery/config'
+    )
+    _checkConfig(
+      config,
+      ['hadiscovery', 'topics', 'clearTriggeredConfig'],
+      0,
+      '${discoveryPrefix}/switch/ialarm/clear_triggered/config'
+    )
     _checkConfig(config, ['hadiscovery', 'zoneName'], 0, 'Zone')
     // fix backward compatibility for multiple alarm_qos and sensors_qos config positions...
-    _checkConfig(config, ['hadiscovery', 'alarm_qos'], 0, config.topics.alarm_qos || (config.topics.alarm && config.topics.alarm.alarm_qos) || 2)
-    _checkConfig(config, ['hadiscovery', 'sensors_qos'], 0, config.topics.sensors_qos || (config.topics.sensors && config.topics.sensors.sensors_qos) || 0)
+    _checkConfig(
+      config,
+      ['hadiscovery', 'alarm_qos'],
+      0,
+      config.topics.alarm_qos ||
+        (config.topics.alarm && config.topics.alarm.alarm_qos) ||
+        2
+    )
+    _checkConfig(
+      config,
+      ['hadiscovery', 'sensors_qos'],
+      0,
+      config.topics.sensors_qos ||
+        (config.topics.sensors && config.topics.sensors.sensors_qos) ||
+        0
+    )
     _checkConfig(config, ['hadiscovery', 'code'], 0, '')
 
     // default device_class mappings and old config cleanup
-    if (config.hadiscovery &&
+    if (
+      config.hadiscovery &&
       config.hadiscovery &&
       config.hadiscovery.zones &&
-      config.hadiscovery.zones.perimetrale) {
+      config.hadiscovery.zones.perimetrale
+    ) {
       config.hadiscovery.zones = undefined
     }
     _checkConfig(config, ['hadiscovery', 'zones'], 0, {
@@ -221,12 +363,12 @@ function initDefaults (config, configFile) {
       icon: 'mdi:lock-open'
     })
     _checkConfig(config, ['zones'], 0, [
-    //   {
-    //     number: 999,
-    //     contactType: 'NO',
-    //     device_class: 'moisture',
-    //     statusProperty: 'fault'
-    //   }
+      //   {
+      //     number: 999,
+      //     contactType: 'NO',
+      //     device_class: 'moisture',
+      //     statusProperty: 'fault'
+      //   }
     ])
 
     // backward compatiblity zone objects -> zone array
@@ -259,26 +401,31 @@ function initDefaults (config, configFile) {
 }
 
 export const configHandler = {
-
   getMaxZones: () => {
     return MeianConstants?.listLimit?.GetByWay || 128
   },
 
   /**
-     * read hassos addon options file and merge with missing config
-     * @param {*} optionsFile
-     * @returns
-     */
+   * read hassos addon options file and merge with missing config
+   * @param {*} optionsFile
+   * @returns
+   */
   readHassOsOptions: function (optionsFile) {
     // merge default config.json with options.json
 
-    loggerBasic.info('Trying to merge HASSOS options file (' + optionsFile + ') with default config.json')
+    loggerBasic.info(
+      'Trying to merge HASSOS options file (' +
+        optionsFile +
+        ') with default config.json'
+    )
     const file = fs.readFileSync(optionsFile, 'utf8')
     const hassos = JSON.parse(file)
 
     // default file
     const baseDir = getBaseDir()
-    const config = YAML.parse(fs.readFileSync(`${baseDir}/templates/full.config.yaml`, 'utf8'))
+    const config = YAML.parse(
+      fs.readFileSync(`${baseDir}/templates/full.config.yaml`, 'utf8')
+    )
 
     // merge main nodes
     config.verbose = hassos.verbose
@@ -288,7 +435,8 @@ export const configHandler = {
 
     // merge hadiscovery values
     config.hadiscovery.code = hassos.code || hassos.hadiscovery.code || ''
-    config.hadiscovery.zoneName = hassos.zoneName || hassos.hadiscovery.zoneName || 'Zone'
+    config.hadiscovery.zoneName =
+      hassos.zoneName || hassos.hadiscovery.zoneName || 'Zone'
     config.hadiscovery.events = hassos.events || hassos.hadiscovery.events
     config.hadiscovery.bypass = hassos.bypass || hassos.hadiscovery.bypass
 
@@ -300,9 +448,9 @@ export const configHandler = {
   },
 
   /**
-  * Read a config file from file system
-  * @param {*} configFile
-  */
+   * Read a config file from file system
+   * @param {*} configFile
+   */
   readConfigFile: function (configFile) {
     let config = {}
 
@@ -347,7 +495,10 @@ export const configHandler = {
     if (templateFile) {
       file = fs.readFileSync(templateFile, 'utf8')
     } else {
-      file = fs.readFileSync(path.join(baseDir, 'templates/tmpl.config.json'), 'utf8')
+      file = fs.readFileSync(
+        path.join(baseDir, 'templates/tmpl.config.json'),
+        'utf8'
+      )
     }
 
     const config = initDefaults(JSON.parse(file), templateFile || 'test.json')
@@ -360,20 +511,27 @@ export const configHandler = {
     // const json = JSON.stringify(config)
     const yamlContent = doc.toString()
 
-    fs.writeFile(path.join(baseDir, 'templates/full.config.yaml'), yamlContent, 'utf8', function (err) {
-      if (err) {
-        loggerBasic.error('An error occured while writing Yaml to File.')
-        return
-      }
+    fs.writeFile(
+      path.join(baseDir, 'templates/full.config.yaml'),
+      yamlContent,
+      'utf8',
+      function (err) {
+        if (err) {
+          loggerBasic.error('An error occured while writing Yaml to File.')
+          return
+        }
 
-      loggerBasic.info('Yaml file generated')
-    })
+        loggerBasic.info('Yaml file generated')
+      }
+    )
 
     return config
   },
   getZoneOverride: function (config, id, typeId) {
     const numericId = parseInt(id)
-    const zoneConfig = config.zones && config.zones.find(item => parseInt(item.number) === numericId)
+    const zoneConfig =
+      config.zones &&
+      config.zones.find(item => parseInt(item.number) === numericId)
 
     if (zoneConfig) {
       return zoneConfig
@@ -387,8 +545,11 @@ export const configHandler = {
       // type config
       if (typeId) {
         if (config.hadiscovery.zones[typeId]) {
-          defaultConfig.icon = config.hadiscovery.zones[typeId].icon || defaultConfig.icon
-          defaultConfig.device_class = config.hadiscovery.zones[typeId].device_class || defaultConfig.device_class
+          defaultConfig.icon =
+            config.hadiscovery.zones[typeId].icon || defaultConfig.icon
+          defaultConfig.device_class =
+            config.hadiscovery.zones[typeId].device_class ||
+            defaultConfig.device_class
         }
       }
 
@@ -418,5 +579,4 @@ export const configHandler = {
     loggerBasic.warn(`Features ${JSON.stringify(featureNames)} are disabled`)
     return false
   }
-
 }

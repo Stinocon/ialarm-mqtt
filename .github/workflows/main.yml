@@ -2,11 +2,11 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ master, main ]
+    branches: [master, main]
   pull_request:
-    branches: [ master, main ]
+    branches: [master, main]
   release:
-    types: [ published ]
+    types: [published]
 
 env:
   REGISTRY: docker.io
@@ -130,11 +130,11 @@ jobs:
               base: 'master',
               head: context.sha
             });
-            
+
             const changelog = commits.commits
               .map(commit => `- ${commit.commit.message}`)
               .join('\n');
-            
+
             return changelog;
 
       - name: Update release notes
@@ -164,7 +164,7 @@ jobs:
               state: 'open',
               labels: ['deployment']
             });
-            
+
             for (const issue of issues) {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,

@@ -7,21 +7,21 @@ server:
   polling_status: 5000
 mqtt:
   host: 192.168.1.82
-  port: "1883"
+  port: '1883'
   username: admin
   password: password
   #clientId: ialarm-mqtt #optional, will be auto generated
   cache: 5m
   retain: true
 verbose: false
-name: ""
+name: ''
 hadiscovery:
   enabled: true
   zoneName: Zona
   alarm_qos: 2
   sensors_qos: 0
 #  code: "1234"
-# zones: 
+# zones:
 #   - number: 1
 #     device_class: door
 #   - number: 16

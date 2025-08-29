@@ -9,7 +9,14 @@ try {
       if (cmdArgs && cmdArgs.length > 0) {
         for (let index = 0; index < cmdArgs.length; index++) {
           const item = cmdArgs[index]
-          if (item === '-w' || item === '-d' || item === '-p' || item === '-t' || item === '-c' || item === '--hassos') {
+          if (
+            item === '-w' ||
+            item === '-d' ||
+            item === '-p' ||
+            item === '-t' ||
+            item === '-c' ||
+            item === '--hassos'
+          ) {
             data[item] = cmdArgs[index + 1]
             console.error('Found arg ' + item + ' with value ' + data[item])
           }
@@ -24,11 +31,16 @@ try {
   const cmdArgs = parseArgs(process.argv.slice(2))
 
   if (!cmdArgs['--hassos'] && !cmdArgs['-c']) {
-    console.log('please provide the path of the folder containing configuration file: ', 'ialarm-mqtt -c /path')
+    console.log(
+      'please provide the path of the folder containing configuration file: ',
+      'ialarm-mqtt -c /path'
+    )
     process.exit(1)
   }
 
-  const config = cmdArgs['--hassos'] ? configHandler.readHassOsOptions(cmdArgs['--hassos']) : configHandler.readConfigFile(cmdArgs['-c'])
+  const config = cmdArgs['--hassos']
+    ? configHandler.readHassOsOptions(cmdArgs['--hassos'])
+    : configHandler.readConfigFile(cmdArgs['-c'])
 
   if (config) {
     ialarmMqtt(config)

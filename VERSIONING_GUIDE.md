@@ -9,6 +9,7 @@ This guide explains the versioning strategy and release process for the ialarm-m
 **Current Version**: `0.12.1`
 
 **Version History**:
+
 - `0.12.0` - Initial release (2024-12-19)
 - `0.12.1` - Major modernization release (2025-08-29)
 
@@ -22,17 +23,17 @@ This project follows [Semantic Versioning 2.0.0](https://semver.org/):
 MAJOR.MINOR.PATCH
    |     |     |
    |     |     └── Patch: Bug fixes, backwards compatible
-   |     └──────── Minor: New features, backwards compatible  
+   |     └──────── Minor: New features, backwards compatible
    └────────────── Major: Breaking changes, incompatible API
 ```
 
 ### Version Types
 
-| Type | Description | Example | When to Use |
-|------|-------------|---------|-------------|
-| **PATCH** | Bug fixes, minor improvements | `0.12.1` → `0.12.2` | Bug fixes, security patches, minor improvements |
-| **MINOR** | New features, backwards compatible | `0.12.1` → `0.13.0` | New features, enhancements, new APIs |
-| **MAJOR** | Breaking changes, incompatible | `0.12.1` → `1.0.0` | Breaking changes, major rewrites, incompatible APIs |
+| Type      | Description                        | Example             | When to Use                                         |
+| --------- | ---------------------------------- | ------------------- | --------------------------------------------------- |
+| **PATCH** | Bug fixes, minor improvements      | `0.12.1` → `0.12.2` | Bug fixes, security patches, minor improvements     |
+| **MINOR** | New features, backwards compatible | `0.12.1` → `0.13.0` | New features, enhancements, new APIs                |
+| **MAJOR** | Breaking changes, incompatible     | `0.12.1` → `1.0.0`  | Breaking changes, major rewrites, incompatible APIs |
 
 ## 🚀 Automated Versioning
 
@@ -123,6 +124,7 @@ git push origin vX.Y.Z
 ### 7. Docker Build (Automated)
 
 The GitHub Actions workflow will automatically:
+
 - Build Docker image
 - Run security scans
 - Push to Docker Hub
@@ -143,6 +145,7 @@ The version bump script automatically updates:
 Location: `scripts/version-bump.js`
 
 Features:
+
 - ✅ Automatic version parsing and incrementing
 - ✅ Multiple file updates
 - ✅ Validation of version format
@@ -157,7 +160,7 @@ Added to `package.json`:
 {
   "scripts": {
     "version:patch": "node scripts/version-bump.js patch",
-    "version:minor": "node scripts/version-bump.js minor", 
+    "version:minor": "node scripts/version-bump.js minor",
     "version:major": "node scripts/version-bump.js major"
   }
 }
@@ -171,21 +174,31 @@ The `CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/) forma
 
 ```markdown
 ## [Unreleased]
+
 ### Added
+
 ### Changed
+
 ### Deprecated
+
 ### Removed
+
 ### Fixed
+
 ### Security
 
 ## [X.Y.Z] - YYYY-MM-DD
+
 ### Added
+
 - New features
 
 ### Changed
+
 - Changes in existing functionality
 
 ### Fixed
+
 - Bug fixes
 ```
 

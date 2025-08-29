@@ -56,14 +56,14 @@ server:
     - zoneNames
 mqtt:
   host: 192.168.1.82
-  port: "1883"
+  port: '1883'
   username: admin
   password: password
   clientId: ialarm-mqtt
   cache: 5m
   retain: true
 verbose: false
-name: ""
+name: ''
 topics:
   availability: ialarm/alarm/availability
   alarm:
@@ -124,8 +124,8 @@ payloads:
     disarm: disarmed
     cancel: cancel
     triggered: triggered
-  sensorOn: "1"
-  sensorOff: "0"
+  sensorOn: '1'
+  sensorOff: '0'
 hadiscovery:
   enabled: true
   discoveryPrefix: homeassistant
@@ -144,23 +144,23 @@ hadiscovery:
   zoneName: Zone
   alarm_qos: 2
   sensors_qos: 0
-  code: ""
+  code: ''
   zones:
-    "0":
+    '0':
       device_class: safety
-    "1":
+    '1':
       device_class: door
-    "2":
+    '2':
       device_class: window
-    "3":
+    '3':
       device_class: motion
-    "4":
+    '4':
       device_class: safety
-    "5":
+    '5':
       device_class: gas
-    "6":
+    '6':
       device_class: smoke
-    "7":
+    '7':
       device_class: lock
     problem:
       zone bypass: safety

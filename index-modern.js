@@ -89,8 +89,10 @@ class IAlarmMQTTBridge {
 
   setupSocketEventHandlers () {
     // Connection established
-    this.socket.onConnected(async (connectionResponse) => {
-      this.logger.info('TCP connection established', { response: connectionResponse })
+    this.socket.onConnected(async connectionResponse => {
+      this.logger.info('TCP connection established', {
+        response: connectionResponse
+      })
       this.healthMonitor.updateMetric('tcpConnected', true)
       this.reconnectAttempts = 0
 
@@ -99,19 +101,22 @@ class IAlarmMQTTBridge {
     })
 
     // Command responses
-    this.socket.onResponse(async (commandResponse) => {
+    this.socket.onResponse(async commandResponse => {
       try {
         const startTime = Date.now()
         await this.handleCommandResponse(commandResponse)
         this.healthMonitor.recordResponseTime(Date.now() - startTime)
-        this.healthMonitor.updateMetric('messageCount', this.healthMonitor.metrics.messageCount + 1)
+        this.healthMonitor.updateMetric(
+          'messageCount',
+          this.healthMonitor.metrics.messageCount + 1
+        )
       } catch (error) {
         this.handleError(error)
       }
     })
 
     // Connection errors
-    this.socket.onError((error) => {
+    this.socket.onError(error => {
       this.logger.error('Socket error', { error: error.message })
       this.healthMonitor.updateMetric('tcpConnected', false)
       this.healthMonitor.recordError(error)
@@ -192,7 +197,10 @@ class IAlarmMQTTBridge {
         const commandInterval = setInterval(async () => {
           const executionTime = Date.now()
 
-          if (MeianConnection.status.isReady() || (executionTime - requestTime) > 10000) {
+          if (
+            MeianConnection.status.isReady() ||
+            executionTime - requestTime > 10000
+          ) {
             clearInterval(commandInterval)
             try {
               await this.socket.executeCommand(commands, args)
@@ -227,7 +235,9 @@ class IAlarmMQTTBridge {
 
   parseZones (zoneData) {
     try {
-      this.logger.info('Zone information received', { zoneCount: Object.keys(zoneData).length })
+      this.logger.info('Zone information received', {
+        zoneCount: Object.keys(zoneData).length
+      })
 
       // Update zones in status
       Object.keys(zoneData).forEach(zoneId => {
@@ -262,13 +272,16 @@ class IAlarmMQTTBridge {
       // Update alarm status
       if (byWayData.armed !== undefined) {
         this.status.armed = byWayData.armed
-        this.status.mode = byWayData.mode || (byWayData.armed ? 'away' : 'disarmed')
+        this.status.mode =
+          byWayData.mode || (byWayData.armed ? 'away' : 'disarmed')
 
         // Publish status update
         this.publisher.publishStatus(this.status)
 
         // Add to events
-        this.addEvent(`Alarm ${this.status.armed ? 'armed' : 'disarmed'} in ${this.status.mode} mode`)
+        this.addEvent(
+          `Alarm ${this.status.armed ? 'armed' : 'disarmed'} in ${this.status.mode} mode`
+        )
       }
     } catch (error) {
       this.logger.error('Error parsing ByWay data', { error: error.message })
@@ -277,7 +290,9 @@ class IAlarmMQTTBridge {
 
   parseLog (logData) {
     try {
-      this.logger.info('Log information received', { logCount: logData.length })
+      this.logger.info('Log information received', {
+        logCount: logData.length
+      })
 
       // Process log entries
       logData.forEach(entry => {
@@ -382,7 +397,8 @@ class IAlarmMQTTBridge {
     })
 
     this.healthMonitor.registerHealthCheck('polling_health', () => {
-      const timeSinceLastPoll = Date.now() - this.healthMonitor.metrics.lastSuccessfulPoll
+      const timeSinceLastPoll =
+        Date.now() - this.healthMonitor.metrics.lastSuccessfulPoll
       return timeSinceLastPoll < 60000 // 1 minute
     })
   }
@@ -461,7 +477,7 @@ class IAlarmMQTTBridge {
 }
 
 // Export the main function
-export const ialarmMqtt = (config) => {
+export const ialarmMqtt = config => {
   return new IAlarmMQTTBridge(config)
 }
 

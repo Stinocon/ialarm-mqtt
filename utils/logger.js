@@ -34,17 +34,22 @@ class Logger {
       }
     })
 
-    return this.json ? JSON.stringify(logEntry) : `${logEntry.timestamp} [${logEntry.level}] ${logEntry.message}`
+    return this.json
+      ? JSON.stringify(logEntry)
+      : `${logEntry.timestamp} [${logEntry.level}] ${logEntry.message}`
   }
 
   _log (level, message, meta = {}) {
     if (LOG_LEVELS[level.toUpperCase()] <= this.level) {
       const formattedMessage = this._formatMessage(level, message, meta)
-      const output = level === 'error'
-        ? console.error
-        : level === 'warn'
-          ? console.warn
-          : level === 'debug' ? console.log : console.info
+      const output =
+        level === 'error'
+          ? console.error
+          : level === 'warn'
+            ? console.warn
+            : level === 'debug'
+              ? console.log
+              : console.info
       output(formattedMessage)
     }
   }

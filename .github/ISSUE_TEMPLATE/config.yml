@@ -2,7 +2,7 @@ blank_issues_enabled: false
 contact_links:
   - name: ialarm-mqtt addon issues
     url: https://github.com/maxill1/addons/issues
-    about: Issues related to the ialarm-mqtt addon for HA (make sure it's related to the addon and not to the ialarm-mqtt itself).    
+    about: Issues related to the ialarm-mqtt addon for HA (make sure it's related to the addon and not to the ialarm-mqtt itself).
   - name: node-ialarm issues
     url: https://github.com/maxill1/node-ialarm/issues
     about: Issues related to node-ialarm library.

@@ -94,7 +94,9 @@ function incrementVersion (currentVersion, type) {
 function validateVersion (version) {
   const versionRegex = /^\d+\.\d+\.\d+$/
   if (!versionRegex.test(version)) {
-    throw new Error(`Invalid version format: ${version}. Expected format: x.y.z`)
+    throw new Error(
+      `Invalid version format: ${version}. Expected format: x.y.z`
+    )
   }
   return version
 }

@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Version bump automation script
 - Changelog tracking
 
@@ -16,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 🚀 Major Modernization Release
 
 #### ✨ Added
+
 - **Beautiful Web Interface**: Modern dashboard with real-time updates
 - **Express.js Web Server**: RESTful API with WebSocket support
 - **Health Monitoring System**: Comprehensive system health tracking
@@ -28,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **State Management**: Persistent system state and event logging
 
 #### 🔧 Changed
+
 - **Dependencies**: Updated all packages to latest secure versions
 - **Architecture**: Modern layered architecture with modular design
 - **Error Handling**: Comprehensive error tracking and recovery
@@ -35,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Security**: Zero vulnerabilities, secure dependency management
 
 #### 🛡️ Security
+
 - Fixed 6 security vulnerabilities (4 high, 1 moderate, 1 low)
 - Non-root container execution
 - Security middleware (Helmet, CORS)
@@ -42,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secure dependency management
 
 #### 📚 Documentation
+
 - Comprehensive README with examples
 - API reference documentation
 - Configuration guides
@@ -49,12 +54,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Development setup instructions
 
 #### 🐳 Docker
+
 - Multi-stage build for optimization
 - Health checks and graceful shutdown
 - Multi-architecture support (AMD64, ARM64)
 - Security-first container design
 
 #### 📊 Monitoring
+
 - Health scoring system (0-100)
 - Real-time performance metrics
 - Connection status monitoring
@@ -64,6 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.12.0] - 2024-12-19
 
 ### Added
+
 - Initial release of ialarm-mqtt bridge
 - Basic MQTT integration
 - Home Assistant discovery support
@@ -71,6 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Alarm control (arm/disarm)
 
 ### Features
+
 - TCP connection to iAlarm panels
 - MQTT message publishing
 - Zone status monitoring
@@ -136,6 +145,7 @@ type(scope): description
 ```
 
 Types:
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation changes

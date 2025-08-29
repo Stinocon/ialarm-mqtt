@@ -10,36 +10,42 @@ A modern, secure, and feature-rich MQTT bridge for iAlarm systems with a beautif
 ## ✨ Features
 
 ### 🔐 Alarm Control
+
 - **Arm Home** - Secure your home while you're inside
 - **Arm Away** - Full security when you're out
 - **Disarm** - Quick and secure disarming
 - **Real-time Status** - Live alarm system status
 
 ### 🏘️ Zone Monitoring
+
 - **Zone Status** - Real-time zone information (OK/Problem/Open)
 - **Zone Names** - Custom zone naming support
 - **Visual Indicators** - Beautiful zone status display
 - **Event Logging** - Complete zone activity history
 
 ### 🌐 Web Interface
+
 - **Modern Dashboard** - Beautiful, responsive web interface
 - **Real-time Updates** - WebSocket-powered live updates
 - **Mobile Friendly** - Works perfectly on all devices
 - **Dark/Light Themes** - User preference support
 
 ### 🔌 MQTT Integration
+
 - **Home Assistant Discovery** - Automatic device discovery
 - **MQTT 5.x Support** - Latest MQTT protocol
 - **Persistent Discovery** - Survives container restarts
 - **Custom Topics** - Flexible topic configuration
 
 ### 📊 Monitoring & Health
+
 - **Health Monitoring** - System health tracking
 - **Prometheus Metrics** - Production-ready metrics
 - **Error Recovery** - Automatic reconnection
 - **Performance Tracking** - Response time monitoring
 
 ### 🛡️ Security & Reliability
+
 - **Secure Dependencies** - All vulnerabilities patched
 - **Non-root Container** - Security-first approach
 - **Graceful Shutdown** - Proper signal handling
@@ -162,16 +168,16 @@ The bridge automatically creates Home Assistant devices when `homeAssistant: tru
 # configuration.yaml
 mqtt:
   alarm_control_panel:
-    - name: "iAlarm"
-      state_topic: "ialarm/status"
-      command_topic: "ialarm/command"
-      availability_topic: "ialarm/available"
-      payload_arm_away: "arm_away"
-      payload_arm_home: "arm_home"
-      payload_disarm: "disarm"
-      state_armed_away: "armed_away"
-      state_armed_home: "armed_home"
-      state_disarmed: "disarmed"
+    - name: 'iAlarm'
+      state_topic: 'ialarm/status'
+      command_topic: 'ialarm/command'
+      availability_topic: 'ialarm/available'
+      payload_arm_away: 'arm_away'
+      payload_arm_home: 'arm_home'
+      payload_disarm: 'disarm'
+      state_armed_away: 'armed_away'
+      state_armed_home: 'armed_home'
+      state_disarmed: 'disarmed'
 ```
 
 ## 🔧 Development
@@ -218,24 +224,24 @@ docker run -p 3000:3000 -v ./config:/config ialarm-mqtt
 
 ### REST API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/health` | GET | System health status |
-| `/api/metrics` | GET | Prometheus metrics |
-| `/api/status` | GET | Alarm system status |
-| `/api/zones` | GET | Zone information |
-| `/api/events` | GET | Recent events |
-| `/api/config` | GET | Current configuration |
-| `/api/alarm/arm` | POST | Arm alarm system |
-| `/api/alarm/disarm` | POST | Disarm alarm system |
+| Endpoint            | Method | Description           |
+| ------------------- | ------ | --------------------- |
+| `/api/health`       | GET    | System health status  |
+| `/api/metrics`      | GET    | Prometheus metrics    |
+| `/api/status`       | GET    | Alarm system status   |
+| `/api/zones`        | GET    | Zone information      |
+| `/api/events`       | GET    | Recent events         |
+| `/api/config`       | GET    | Current configuration |
+| `/api/alarm/arm`    | POST   | Arm alarm system      |
+| `/api/alarm/disarm` | POST   | Disarm alarm system   |
 
 ### WebSocket Events
 
-| Event | Description |
-|-------|-------------|
-| `status` | Alarm status updates |
-| `zones` | Zone status updates |
-| `events` | Event log updates |
+| Event    | Description            |
+| -------- | ---------------------- |
+| `status` | Alarm status updates   |
+| `zones`  | Zone status updates    |
+| `events` | Event log updates      |
 | `health` | Health metrics updates |
 
 ## 🐳 Docker Compose
@@ -249,7 +255,7 @@ services:
     container_name: ialarm-mqtt
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - '3000:3000'
     volumes:
       - ./config:/config
       - ./logs:/logs
@@ -257,7 +263,7 @@ services:
       - NODE_ENV=production
       - LOG_LEVEL=info
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/api/health']
       interval: 30s
       timeout: 10s
       retries: 3

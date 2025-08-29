@@ -8,7 +8,9 @@ import { dirname, join } from 'path'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
-const pjson = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf8'))
+const pjson = JSON.parse(
+  readFileSync(join(__dirname, '../package.json'), 'utf8')
+)
 
 export default function (config, zonesToConfig, reset, deviceInfo) {
   const logger = MeianLogger(config.verbose ? 'debug' : 'info')
@@ -31,9 +33,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
   function getZoneDevice (zone) {
     return {
       ...deviceConfig,
-      identifiers: [
-                `${alarmId}_zone_${zone.id}`
-      ],
+      identifiers: [`${alarmId}_zone_${zone.id}`],
       name: `${deviceConfig.name} ${config.hadiscovery.zoneName} ${zone.id} ${zone.name}`,
       model: zone.type
     }
@@ -53,7 +53,8 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
     if (!data) {
       data = {}
     }
-    data.discoveryPrefix = config.hadiscovery.discoveryPrefix || 'homeassistant'
+    data.discoveryPrefix =
+      config.hadiscovery.discoveryPrefix || 'homeassistant'
     let topic = topicTemplate
     for (const key in data) {
       const value = data[key]
@@ -64,14 +65,22 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
   }
 
   /**
-     * binary sensor for "fault" property
-     * @param {*} zone
-     * @param {*} i
-     * @param {*} battery
-     * @returns
-     */
+   * binary sensor for "fault" property
+   * @param {*} zone
+   * @param {*} i
+   * @param {*} battery
+   * @returns
+   */
   const configSensorFault = function (zone, i) {
-    const message = configBinarySensors(zone, i, 'Motion', 'safety', 'fault', config.hadiscovery.topics.sensorConfig, false)
+    const message = configBinarySensors(
+      zone,
+      i,
+      'Motion',
+      'safety',
+      'fault',
+      config.hadiscovery.topics.sensorConfig,
+      false
+    )
 
     if (!reset) {
       const zoneName = config.hadiscovery.zoneName
@@ -80,7 +89,11 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       let icon
       let deviceClass
       // priority to zone config
-      const zoneConfig = configHandler.getZoneOverride(config, zone.id, zone.typeId)
+      const zoneConfig = configHandler.getZoneOverride(
+        config,
+        zone.id,
+        zone.typeId
+      )
       if (zoneConfig) {
         icon = zoneConfig.icon
         deviceClass = zoneConfig.device_class
@@ -104,47 +117,79 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
   }
 
   /**
-     * binary sensor for "lowbat" property
-     * @param {*} zone
-     * @param {*} i
-     * @returns
-     */
+   * binary sensor for "lowbat" property
+   * @param {*} zone
+   * @param {*} i
+   * @returns
+   */
   const configSensorBattery = function (zone, i) {
-    return configBinarySensors(zone, i, 'Battery', 'battery', 'lowbat', config.hadiscovery.topics.sensorBatteryConfig, false)
+    return configBinarySensors(
+      zone,
+      i,
+      'Battery',
+      'battery',
+      'lowbat',
+      config.hadiscovery.topics.sensorBatteryConfig,
+      false
+    )
   }
 
   /**
-     * binary sensor for "wirelessLoss" property
-     * @param {*} zone
-     * @param {*} i
-     * @returns
-     */
+   * binary sensor for "wirelessLoss" property
+   * @param {*} zone
+   * @param {*} i
+   * @returns
+   */
   const configSensorConnectivity = function (zone, i) {
-    return configBinarySensors(zone, i, 'Connectivity', 'connectivity', 'wirelessLoss', config.hadiscovery.topics.sensorConnectivityConfig, true)
+    return configBinarySensors(
+      zone,
+      i,
+      'Connectivity',
+      'connectivity',
+      'wirelessLoss',
+      config.hadiscovery.topics.sensorConnectivityConfig,
+      true
+    )
   }
 
   /**
-     * binary sensor for "alarm" property
-     * @param {*} zone
-     * @param {*} i
-     * @returns
-     */
+   * binary sensor for "alarm" property
+   * @param {*} zone
+   * @param {*} i
+   * @returns
+   */
   const configSensorAlarm = function (zone, i) {
-    return configBinarySensors(zone, i, 'Alarm', 'safety', 'alarm', config.hadiscovery.topics.sensorAlarmConfig, false)
+    return configBinarySensors(
+      zone,
+      i,
+      'Alarm',
+      'safety',
+      'alarm',
+      config.hadiscovery.topics.sensorAlarmConfig,
+      false
+    )
   }
 
   /**
-     * Binary sensors based on alarm booleans
-     * @param {*} zone
-     * @param {*} i
-     * @param {*} type
-     * @param {*} device_class
-     * @param {*} statusProperty
-     * @param {*} topic
-     * @param {*} defaultOn
-     * @returns
-     */
-  const configBinarySensors = function (zone, index, type, deviceClass, statusProperty, topic, defaultOn) {
+   * Binary sensors based on alarm booleans
+   * @param {*} zone
+   * @param {*} i
+   * @param {*} type
+   * @param {*} device_class
+   * @param {*} statusProperty
+   * @param {*} topic
+   * @param {*} defaultOn
+   * @returns
+   */
+  const configBinarySensors = function (
+    zone,
+    index,
+    type,
+    deviceClass,
+    statusProperty,
+    topic,
+    defaultOn
+  ) {
     let payload = ''
     const zoneId = zone.id
     if (!reset) {
@@ -185,9 +230,9 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
   }
 
   /**
-     * Log event (last)
-     * @returns
-     */
+   * Log event (last)
+   * @returns
+   */
   const configSensorEvents = function () {
     let payload = ''
     if (!reset) {
@@ -213,9 +258,9 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
   }
 
   /**
-     * Error log
-     * @returns
-     */
+   * Error log
+   * @returns
+   */
   const configConnectionStatus = function () {
     let payload = ''
     if (!reset) {
@@ -241,11 +286,11 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
   }
 
   /**
-     * Bypass switch
-     * @param {*} zone
-     * @param {*} i
-     * @returns
-     */
+   * Bypass switch
+   * @param {*} zone
+   * @param {*} i
+   * @returns
+   */
   const configSwitchBypass = function (zone, index) {
     const zoneName = config.hadiscovery.zoneName || 'Zone'
     const bypassName = config.hadiscovery.bypass.name || 'Bypass'
@@ -281,11 +326,11 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
   }
 
   /**
-    * switch to clear cached values
-    * @param {*} zone
-    * @param {*} i
-    * @returns
-    */
+   * switch to clear cached values
+   * @param {*} zone
+   * @param {*} i
+   * @returns
+   */
   const configSwitchClearCache = function () {
     let payload = ''
     if (!reset) {
@@ -310,11 +355,11 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
   }
 
   /**
-    * switch to clear discovery
-    * @param {*} zone
-    * @param {*} i
-    * @returns
-    */
+   * switch to clear discovery
+   * @param {*} zone
+   * @param {*} i
+   * @returns
+   */
   const configSwitchClearDiscovery = function () {
     let payload = ''
     if (!reset) {
@@ -339,11 +384,11 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
   }
 
   /**
-     * switch to cancel triggered sensors alarms
-     * @param {*} zone
-     * @param {*} i
-     * @returns
-     */
+   * switch to cancel triggered sensors alarms
+   * @param {*} zone
+   * @param {*} i
+   * @returns
+   */
   const configSwitchCancelTriggered = function (areaId) {
     let payload = ''
     if (!reset) {
@@ -420,8 +465,12 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
 
     // cleanup old topics structures
     if (reset) {
-      messages.push(configCleanup('${discoveryPrefix}/alarm_control_panel/ialarm/config'))
-      messages.push(configCleanup('${discoveryPrefix}/sensor/ialarm/error/config'))
+      messages.push(
+        configCleanup('${discoveryPrefix}/alarm_control_panel/ialarm/config')
+      )
+      messages.push(
+        configCleanup('${discoveryPrefix}/sensor/ialarm/error/config')
+      )
       messages.push(configCleanup('ialarm/alarm/error'))
     }
 
@@ -435,20 +484,36 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         zone = zonesToConfig[i]
         // zone not found
         if (!zone) {
-          logger.log('error', `HA discovery config: ignoring zone ${i} (GetZone did not return any info on this zone or it is filtered out via server.zones in config)`)
+          logger.log(
+            'error',
+            `HA discovery config: ignoring zone ${i} (GetZone did not return any info on this zone or it is filtered out via server.zones in config)`
+          )
           continue
         }
         // disabled/not in use zone
         if (zone.typeId === 0) {
-          logger.log('debug', `HA discovery config: ignoring unused zone ${zone.id} (it's configured as disabled on the alarm - typeId = 0)`)
+          logger.log(
+            'debug',
+            `HA discovery config: ignoring unused zone ${zone.id} (it's configured as disabled on the alarm - typeId = 0)`
+          )
           continue
         }
       }
 
       // cleanup old topics structures
       if (reset) {
-        messages.push(configCleanup('${discoveryPrefix}/binary_sensor/ialarm/${zoneId}/config', zone))
-        messages.push(configCleanup('${discoveryPrefix}/sensor/ialarm${zoneId}/battery/config', zone))
+        messages.push(
+          configCleanup(
+            '${discoveryPrefix}/binary_sensor/ialarm/${zoneId}/config',
+            zone
+          )
+        )
+        messages.push(
+          configCleanup(
+            '${discoveryPrefix}/sensor/ialarm${zoneId}/battery/config',
+            zone
+          )
+        )
         // messages.push(configCleanup("${discoveryPrefix}/sensor/${zoneId}/battery/config", zone));
       }
 
@@ -474,7 +539,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
     messages.push(configConnectionStatus())
 
     if (reset || configHandler.isFeatureEnabled(config, 'armDisarm')) {
-    // cancel alarm triggered ( TODO multiple switch for all areas?)
+      // cancel alarm triggered ( TODO multiple switch for all areas?)
       messages.push(configSwitchCancelTriggered(1))
 
       // multiple alarm state for multiple area

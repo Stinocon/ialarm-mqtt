@@ -13,7 +13,20 @@ const cache = {
       }
     }
   }, */
-  zone_16: { id: 16, name: 'L15', status: 9, inUse: true, ok: false, alarm: false, bypass: false, lowbat: false, fault: false, wirelessLoss: false, message: 'Fault', problem: true }
+  zone_16: {
+    id: 16,
+    name: 'L15',
+    status: 9,
+    inUse: true,
+    ok: false,
+    alarm: false,
+    bypass: false,
+    lowbat: false,
+    fault: false,
+    wirelessLoss: false,
+    message: 'Fault',
+    problem: true
+  }
 }
 
 const propertiesToChange = {

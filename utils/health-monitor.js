@@ -75,7 +75,9 @@ class HealthMonitor {
 
     // Check response times
     if (this.metrics.responseTimes.length > 0) {
-      const avgResponseTime = this.metrics.responseTimes.reduce((a, b) => a + b, 0) / this.metrics.responseTimes.length
+      const avgResponseTime =
+        this.metrics.responseTimes.reduce((a, b) => a + b, 0) /
+        this.metrics.responseTimes.length
       if (avgResponseTime > this.thresholds.maxResponseTime) {
         score -= 20
       }
@@ -116,7 +118,12 @@ class HealthMonitor {
   // Get current health status
   getHealthStatus () {
     const status = {
-      status: this.metrics.healthScore > 70 ? 'healthy' : this.metrics.healthScore > 30 ? 'degraded' : 'unhealthy',
+      status:
+        this.metrics.healthScore > 70
+          ? 'healthy'
+          : this.metrics.healthScore > 30
+            ? 'degraded'
+            : 'unhealthy',
       score: this.metrics.healthScore,
       uptime: Date.now() - this.metrics.startTime,
       metrics: { ...this.metrics },
@@ -159,7 +166,9 @@ class HealthMonitor {
 
       // Log periodic health status
       if (this.metrics.healthScore === 100) {
-        logger.debug('System health check passed', { healthScore: this.metrics.healthScore })
+        logger.debug('System health check passed', {
+          healthScore: this.metrics.healthScore
+        })
       }
     }, 30000) // Check every 30 seconds
   }
@@ -174,15 +183,21 @@ class HealthMonitor {
 
     metrics.push('# HELP ialarm_mqtt_uptime_seconds System uptime in seconds')
     metrics.push('# TYPE ialarm_mqtt_uptime_seconds counter')
-    metrics.push(`ialarm_mqtt_uptime_seconds ${Math.floor(this.metrics.uptime / 1000)}`)
+    metrics.push(
+      `ialarm_mqtt_uptime_seconds ${Math.floor(this.metrics.uptime / 1000)}`
+    )
 
     metrics.push('# HELP ialarm_mqtt_mqtt_connected MQTT connection status')
     metrics.push('# TYPE ialarm_mqtt_mqtt_connected gauge')
-    metrics.push(`ialarm_mqtt_mqtt_connected ${this.metrics.mqttConnected ? 1 : 0}`)
+    metrics.push(
+      `ialarm_mqtt_mqtt_connected ${this.metrics.mqttConnected ? 1 : 0}`
+    )
 
     metrics.push('# HELP ialarm_mqtt_tcp_connected TCP connection status')
     metrics.push('# TYPE ialarm_mqtt_tcp_connected gauge')
-    metrics.push(`ialarm_mqtt_tcp_connected ${this.metrics.tcpConnected ? 1 : 0}`)
+    metrics.push(
+      `ialarm_mqtt_tcp_connected ${this.metrics.tcpConnected ? 1 : 0}`
+    )
 
     metrics.push('# HELP ialarm_mqtt_message_count Total message count')
     metrics.push('# TYPE ialarm_mqtt_message_count counter')
@@ -193,8 +208,12 @@ class HealthMonitor {
     metrics.push(`ialarm_mqtt_error_count ${this.metrics.errorCount}`)
 
     if (this.metrics.responseTimes.length > 0) {
-      const avgResponseTime = this.metrics.responseTimes.reduce((a, b) => a + b, 0) / this.metrics.responseTimes.length
-      metrics.push('# HELP ialarm_mqtt_avg_response_time_ms Average response time in milliseconds')
+      const avgResponseTime =
+        this.metrics.responseTimes.reduce((a, b) => a + b, 0) /
+        this.metrics.responseTimes.length
+      metrics.push(
+        '# HELP ialarm_mqtt_avg_response_time_ms Average response time in milliseconds'
+      )
       metrics.push('# TYPE ialarm_mqtt_avg_response_time_ms gauge')
       metrics.push(`ialarm_mqtt_avg_response_time_ms ${avgResponseTime}`)
     }

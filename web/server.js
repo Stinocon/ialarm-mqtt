@@ -35,17 +35,19 @@ class WebServer {
 
   setupMiddleware () {
     // Security middleware
-    this.app.use(helmet({
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ["'self'"],
-          styleSrc: ["'self'", "'unsafe-inline'"],
-          scriptSrc: ["'self'"],
-          imgSrc: ["'self'", 'data:', 'https:'],
-          connectSrc: ["'self'", 'ws:', 'wss:']
+    this.app.use(
+      helmet({
+        contentSecurityPolicy: {
+          directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            scriptSrc: ["'self'"],
+            imgSrc: ["'self'", 'data:', 'https:'],
+            connectSrc: ["'self'", 'ws:', 'wss:']
+          }
         }
-      }
-    }))
+      })
+    )
 
     // CORS for development
     if (process.env.NODE_ENV !== 'production') {
@@ -56,11 +58,13 @@ class WebServer {
     this.app.use(compression())
 
     // Logging
-    this.app.use(morgan('combined', {
-      stream: {
-        write: (message) => logger.web(message.trim())
-      }
-    }))
+    this.app.use(
+      morgan('combined', {
+        stream: {
+          write: message => logger.web(message.trim())
+        }
+      })
+    )
 
     // JSON parsing
     this.app.use(express.json({ limit: '10mb' }))
@@ -188,12 +192,14 @@ class WebServer {
       this.clients.add(ws)
 
       // Send initial status
-      ws.send(JSON.stringify({
-        type: 'status',
-        data: this.ialarmInstance.getStatus()
-      }))
+      ws.send(
+        JSON.stringify({
+          type: 'status',
+          data: this.ialarmInstance.getStatus()
+        })
+      )
 
-      ws.on('message', (message) => {
+      ws.on('message', message => {
         try {
           const data = JSON.parse(message)
           this.handleWebSocketMessage(ws, data)
@@ -207,7 +213,7 @@ class WebServer {
         logger.info('WebSocket client disconnected')
       })
 
-      ws.on('error', (error) => {
+      ws.on('error', error => {
         logger.error('WebSocket error', { error: error.message })
         this.clients.delete(ws)
       })
@@ -245,7 +251,10 @@ class WebServer {
 
       res.status(500).json({
         error: 'Internal server error',
-        message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+        message:
+          process.env.NODE_ENV === 'development'
+            ? error.message
+            : 'Something went wrong'
       })
     })
   }
@@ -254,11 +263,14 @@ class WebServer {
   broadcast (data) {
     const message = JSON.stringify(data)
     this.clients.forEach(client => {
-      if (client.readyState === 1) { // WebSocket.OPEN
+      if (client.readyState === 1) {
+        // WebSocket.OPEN
         try {
           client.send(message)
         } catch (error) {
-          logger.error('Error broadcasting to WebSocket client', { error: error.message })
+          logger.error('Error broadcasting to WebSocket client', {
+            error: error.message
+          })
           this.clients.delete(client)
         }
       }
@@ -273,7 +285,7 @@ class WebServer {
         resolve()
       })
 
-      this.server.on('error', (error) => {
+      this.server.on('error', error => {
         logger.error('Web server error', { error: error.message })
         reject(error)
       })
@@ -282,7 +294,7 @@ class WebServer {
 
   // Stop the server
   stop () {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       this.wss.close(() => {
         this.server.close(() => {
           logger.info('Web server stopped')
