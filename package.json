@@ -1,70 +1,70 @@
 {
-    "name": "ialarm-mqtt",
-    "version": "0.12.1",
-    "description": "ialarm to mqtt bridge",
-    "type": "module",
-    "repository": {
-        "type": "git",
-        "url": "git://github.com/maxill1/ialarm-mqtt.git"
-    },
-    "dependencies": {
-        "ialarm": "^0.6.6",
-        "mqtt": "^5.14.0",
-        "yaml": "^2.8.1",
-        "express": "^4.18.2",
-        "ws": "^8.16.0",
-        "helmet": "^7.1.0",
-        "cors": "^2.8.5",
-        "compression": "^1.7.4",
-        "morgan": "^1.10.0",
-        "dotenv": "^16.3.1"
-    },
-    "main": "index.js",
-    "scripts": {
-        "start": "node index.js",
-        "dev": "node --watch index.js",
-        "generate-yaml": "node ./bin/generate-config.js",
-        "test": "node --test",
-        "lint": "eslint .",
-        "lint:fix": "eslint . --fix",
-        "format": "prettier --write .",
-        "format:check": "prettier --check .",
-        "security": "npm audit",
-        "build": "echo 'No build step required for Node.js'",
-        "prepare": "husky install",
-        "version:patch": "node scripts/version-bump.js patch",
-        "version:minor": "node scripts/version-bump.js minor",
-        "version:major": "node scripts/version-bump.js major"
-    },
-    "bin": {
-        "ialarm-mqtt": "./bin/ialarm-mqtt.js"
-    },
-    "keywords": [
-        "mqtt",
-        "ialarm",
-        "alarm",
-        "antifurto365",
-        "meian",
-        "emoolux",
-        "tcp ip alarm",
-        "home-assistant",
-        "addon"
-    ],
-    "author": "Luca Mazzilli",
-    "license": "MIT",
-    "devDependencies": {
-        "eslint": "^8.57.0",
-        "eslint-config-standard": "^17.1.0",
-        "eslint-plugin-import": "^2.29.1",
-        "eslint-plugin-n": "^16.6.2",
-        "eslint-plugin-node": "^11.1.0",
-        "eslint-plugin-promise": "^6.1.1",
-        "prettier": "^3.2.5",
-        "husky": "^8.0.3",
-        "lint-staged": "^15.2.2"
-    },
-    "engines": {
-        "node": ">=18.0.0",
-        "npm": ">=8.0.0"
-    }
+  "name": "ialarm-mqtt",
+  "version": "0.12.1",
+  "description": "ialarm to mqtt bridge",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/maxill1/ialarm-mqtt.git"
+  },
+  "dependencies": {
+    "ialarm": "^0.6.6",
+    "mqtt": "^5.14.0",
+    "yaml": "^2.8.1",
+    "express": "^4.18.2",
+    "ws": "^8.16.0",
+    "helmet": "^7.1.0",
+    "cors": "^2.8.5",
+    "compression": "^1.7.4",
+    "morgan": "^1.10.0",
+    "dotenv": "^16.3.1"
+  },
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "generate-yaml": "node ./bin/generate-config.js",
+    "test": "node --test",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "security": "npm audit",
+    "build": "echo 'No build step required for Node.js'",
+    "prepare": "husky install",
+    "version:patch": "node scripts/version-bump.js patch",
+    "version:minor": "node scripts/version-bump.js minor",
+    "version:major": "node scripts/version-bump.js major"
+  },
+  "bin": {
+    "ialarm-mqtt": "./bin/ialarm-mqtt.js"
+  },
+  "keywords": [
+    "mqtt",
+    "ialarm",
+    "alarm",
+    "antifurto365",
+    "meian",
+    "emoolux",
+    "tcp ip alarm",
+    "home-assistant",
+    "addon"
+  ],
+  "author": "Luca Mazzilli",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "eslint-config-standard": "^17.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-n": "^16.6.2",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^6.1.1",
+    "prettier": "^3.2.5",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
 }

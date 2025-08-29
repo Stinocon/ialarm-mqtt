@@ -3,7 +3,7 @@
 /**
  * Version Bump Script for ialarm-mqtt
  * Automatically increments version numbers for releases
- * 
+ *
  * Usage:
  *   node scripts/version-bump.js [patch|minor|major]
  *   node scripts/version-bump.js 0.12.2 (specific version)
@@ -18,12 +18,12 @@ const __dirname = dirname(__filename)
 const rootDir = join(__dirname, '..')
 
 // Files that contain version information
-const VERSION_FILES = [
-  'package.json',
-  'Dockerfile'
-]
+// const VERSION_FILES = [
+//   'package.json',
+//   'Dockerfile'
+// ]
 
-function readJsonFile(filePath) {
+function readJsonFile (filePath) {
   try {
     const content = readFileSync(filePath, 'utf8')
     return JSON.parse(content)
@@ -33,7 +33,7 @@ function readJsonFile(filePath) {
   }
 }
 
-function writeJsonFile(filePath, data) {
+function writeJsonFile (filePath, data) {
   try {
     const content = JSON.stringify(data, null, 2) + '\n'
     writeFileSync(filePath, content, 'utf8')
@@ -44,7 +44,7 @@ function writeJsonFile(filePath, data) {
   }
 }
 
-function updateDockerfileVersion(filePath, newVersion) {
+function updateDockerfileVersion (filePath, newVersion) {
   try {
     let content = readFileSync(filePath, 'utf8')
     content = content.replace(
@@ -59,7 +59,7 @@ function updateDockerfileVersion(filePath, newVersion) {
   }
 }
 
-function parseVersion(version) {
+function parseVersion (version) {
   const parts = version.split('.').map(Number)
   return {
     major: parts[0] || 0,
@@ -68,9 +68,9 @@ function parseVersion(version) {
   }
 }
 
-function incrementVersion(currentVersion, type) {
+function incrementVersion (currentVersion, type) {
   const version = parseVersion(currentVersion)
-  
+
   switch (type) {
     case 'major':
       version.major++
@@ -87,11 +87,11 @@ function incrementVersion(currentVersion, type) {
     default:
       throw new Error(`Invalid version type: ${type}`)
   }
-  
+
   return `${version.major}.${version.minor}.${version.patch}`
 }
 
-function validateVersion(version) {
+function validateVersion (version) {
   const versionRegex = /^\d+\.\d+\.\d+$/
   if (!versionRegex.test(version)) {
     throw new Error(`Invalid version format: ${version}. Expected format: x.y.z`)
@@ -99,9 +99,9 @@ function validateVersion(version) {
   return version
 }
 
-function main() {
+function main () {
   const args = process.argv.slice(2)
-  
+
   if (args.length === 0) {
     console.log(`
 🚀 iAlarm-MQTT Version Bump Script
@@ -120,16 +120,16 @@ Examples:
   }
 
   const versionArg = args[0]
-  
+
   // Read current version from package.json
   const packagePath = join(rootDir, 'package.json')
   const packageJson = readJsonFile(packagePath)
   const currentVersion = packageJson.version
-  
+
   console.log(`📦 Current version: ${currentVersion}`)
-  
+
   let newVersion
-  
+
   // Check if it's a specific version or increment type
   if (versionArg.includes('.')) {
     // Specific version provided
@@ -138,17 +138,17 @@ Examples:
     // Increment type provided
     newVersion = incrementVersion(currentVersion, versionArg)
   }
-  
+
   console.log(`🚀 New version: ${newVersion}`)
-  
+
   // Update package.json
   packageJson.version = newVersion
   writeJsonFile(packagePath, packageJson)
-  
+
   // Update Dockerfile
   const dockerfilePath = join(rootDir, 'Dockerfile')
   updateDockerfileVersion(dockerfilePath, newVersion)
-  
+
   console.log(`
 🎉 Version bump completed successfully!
 
