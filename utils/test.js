@@ -21,7 +21,7 @@ const cache = {
 }
 
 // Test cases
-test('MessageCompare - detect changes', async (t) => {
+test('MessageCompare - detect changes', async t => {
   await t.test('should detect fault change from false to true', () => {
     const oldValue = { ...cache.zone_16, fault: false }
     const newValue = { ...cache.zone_16, fault: true }
@@ -80,7 +80,7 @@ test('MessageCompare - detect changes', async (t) => {
   })
 })
 
-test('MessageCompare - edge cases', async (t) => {
+test('MessageCompare - edge cases', async t => {
   await t.test('should handle null values', () => {
     const oldValue = { fault: null }
     const newValue = { fault: false }
@@ -146,7 +146,7 @@ test('MessageCompare - edge cases', async (t) => {
 })
 
 // Performance test
-test('MessageCompare - performance', async (t) => {
+test('MessageCompare - performance', async t => {
   await t.test('should handle large objects efficiently', () => {
     const largeOldValue = {}
     const largeNewValue = {}
@@ -167,7 +167,7 @@ test('MessageCompare - performance', async (t) => {
 })
 
 // Integration test
-test('MessageCompare - integration', async (t) => {
+test('MessageCompare - integration', async t => {
   await t.test('should work with real zone data', () => {
     const zoneOld = {
       id: 16,
@@ -210,7 +210,7 @@ test('MessageCompare - integration', async (t) => {
 })
 
 // Bug report test
-test('MessageCompare - known issues', async (t) => {
+test('MessageCompare - known issues', async t => {
   await t.test('should document nested object limitation', () => {
     const oldValue = { zone: { fault: false } }
     const newValue = { zone: { fault: true } }
@@ -219,7 +219,11 @@ test('MessageCompare - known issues', async (t) => {
 
     // Current implementation doesn't handle nested objects properly
     // This documents the limitation for future improvement
-    assert.strictEqual(changes.length, 0, 'Nested objects are not properly compared')
+    assert.strictEqual(
+      changes.length,
+      0,
+      'Nested objects are not properly compared'
+    )
   })
 
   await t.test('should document lastChecked duplication bug', () => {
@@ -230,6 +234,9 @@ test('MessageCompare - known issues', async (t) => {
 
     // Current implementation has a bug that returns duplicate entries
     assert(changes.length >= 1, 'Should detect at least one change')
-    assert(changes.some(change => change.includes('lastChecked')), 'Should detect lastChecked change')
+    assert(
+      changes.some(change => change.includes('lastChecked')),
+      'Should detect lastChecked change'
+    )
   })
 })
