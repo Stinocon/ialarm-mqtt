@@ -18,60 +18,85 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
   logger.info(`Generated alarmId: ${alarmId}`)
 
   /**
-   * Clean zone name by removing duplication patterns
+   * Clean zone name by removing ALL duplication patterns and prefixes
    * @param {string} zoneName - The original zone name
-   * @returns {string} - Cleaned zone name without duplications
+   * @returns {string} - Clean zone name for entity_id usage
    */
-  function cleanZoneName (zoneName) {
-    // ✅ FIX: Gestione robust dei null/undefined
+  function cleanZoneName(zoneName) {
     if (zoneName === null || zoneName === undefined) {
       return 'unknown'
     }
     
     if (typeof zoneName !== 'string') {
       try {
-        zoneName = String(zoneName)
+        zoneName = String(zoneName).toLowerCase()
       } catch (e) {
-        logger.warn(`Cannot convert zone name to string: ${zoneName}, using 'unknown'`)
         return 'unknown'
       }
     }
     
-    if (zoneName.trim() === '') {
+    let cleaned = zoneName.toLowerCase().trim()
+    
+    if (cleaned === '') {
       return 'unknown'
     }
     
-    // Step 1: Remove zona_X_ prefix if present
-    let cleaned = zoneName.replace(/^zona_\d+_/, '')
+    // Step 1: Remove "zone_X_" prefix (case insensitive)
+    cleaned = cleaned.replace(/^zone_?\d+_?/gi, '')
+    cleaned = cleaned.replace(/^zona_?\d+_?/gi, '')
     
-    if (!cleaned || cleaned.trim() === '') {
-      cleaned = zoneName
-    }
+    // Step 2: Remove common prefixes that add no value
+    cleaned = cleaned.replace(/^(device|sensor|zone|zona)_?/gi, '')
     
-    // Step 2: Handle various duplication patterns
-    const parts = cleaned.split('_')
+    // Step 3: Handle duplications more aggressively
+    const parts = cleaned.split(/[_\s-]+/).filter(part => part.length > 0)
     
-    // Pattern: "name_name" -> "name"
-    if (parts.length === 2 && parts[0] === parts[1]) {
-      return parts[0]
-    }
-    
-    // Pattern: "word1_word2_word1_word2" -> "word1_word2"  
-    if (parts.length === 4 && parts[0] === parts[2] && parts[1] === parts[3]) {
-      return `${parts[0]}_${parts[1]}`
-    }
-    
-    // Pattern: "word1_word2_word3_word1_word2_word3" -> "word1_word2_word3"
-    const halfLength = Math.floor(parts.length / 2)
-    if (parts.length % 2 === 0 && halfLength >= 1) {
-      const firstHalf = parts.slice(0, halfLength)
-      const secondHalf = parts.slice(halfLength)
-      if (firstHalf.every((part, index) => part === secondHalf[index])) {
-        return firstHalf.join('_')
+    // Remove consecutive duplicates: ["pir", "sala", "pir", "sala"] -> ["pir", "sala"]
+    const deduped = []
+    for (let i = 0; i < parts.length; i++) {
+      const currentPart = parts[i]
+      const isCompletePattern = i < parts.length / 2 && 
+                               parts.slice(0, parts.length / 2).join('_') === 
+                               parts.slice(parts.length / 2).join('_')
+      
+      if (isCompletePattern && i < parts.length / 2) {
+        deduped.push(currentPart)
+      } else if (!isCompletePattern && !deduped.includes(currentPart)) {
+        deduped.push(currentPart)
       }
     }
     
-    return cleaned
+    // Step 4: Handle specific patterns
+    let result = deduped.join('_')
+    
+    // Pattern: "camera_camera" -> "camera"
+    result = result.replace(/(\w+)_\1/g, '$1')
+    
+    // Pattern: "abc_def_abc_def" -> "abc_def"  
+    const halfLength = Math.floor(deduped.length / 2)
+    if (deduped.length % 2 === 0 && halfLength > 0) {
+      const firstHalf = deduped.slice(0, halfLength)
+      const secondHalf = deduped.slice(halfLength)
+      if (firstHalf.every((part, index) => part === secondHalf[index])) {
+        result = firstHalf.join('_')
+      }
+    }
+    
+    // Step 5: Final cleanup
+    result = result.replace(/_{2,}/g, '_')  // Multiple underscores -> single
+    result = result.replace(/^_|_$/g, '')   // Leading/trailing underscores
+    
+    // Step 6: Ensure result is valid for Home Assistant entity_id
+    result = result.replace(/[^a-z0-9_]/g, '_')  // Only lowercase, numbers, underscores
+    result = result.replace(/_{2,}/g, '_')       // Clean up multiple underscores again
+    result = result.replace(/^_|_$/g, '')        // Clean edges again
+    
+    if (result === '' || result.length === 0) {
+      return 'unknown'
+    }
+    
+    logger.debug(`cleanZoneName: "${zoneName}" -> "${result}"`)
+    return result
   }
 
   const deviceConfig = {
@@ -89,14 +114,13 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
   }*/
 
   function getZoneDevice (zone) {
+    const cleanedName = cleanZoneName(zone.name)
     return {
       ...deviceConfig,
-      identifiers: [
-                `${alarmId}_zone_${zone.id}`
-      ],
-      // Avoid repeating device name in per-zone device name to prevent entity naming conflicts
-      name: `${config.hadiscovery.zoneName} ${zone.id} ${cleanZoneName(zone.name)}`,
-      model: zone.type
+      identifiers: [`${alarmId}_zone_${zone.id}`],
+      // Nome device pulito senza prefissi ridondanti
+      name: `${cleanedName}`,
+      model: zone.type || 'Binary Sensor'
     }
   }
 
@@ -153,7 +177,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         ...message.payload,
         // Use specific entity name to avoid automatic suffixes
         name: `${cleanedName} Stato`,
-        unique_id: `${alarmId}_zone_${zone.id}_fault_v5`
+        unique_id: `${alarmId}_zone_${zone.id}_fault_v6`
       }
 
       // icon is not supported on binary sensor, only switches, light, sensor, etc
@@ -236,7 +260,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         json_attributes_topic: stateTopic,
         json_attributes_template: '{{ value_json | tojson }}',
         state_topic: stateTopic,
-        unique_id: `${alarmId}_zone_${zone.id}_${type.toLowerCase()}_v5`,
+        unique_id: `${alarmId}_zone_${zone.id}_${type.toLowerCase()}_v6`,
         // Helpful logs to diagnose duplicate discovery issues
         // Note: logging here is safe; payload is still an object
         device: getZoneDevice(zone),
@@ -268,7 +292,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         value_template: '{{value_json.description}}',
         json_attributes_topic: config.topics.alarm.event,
         json_attributes_template: '{{ value_json | tojson }}',
-        unique_id: `${alarmId}_events_v5`,
+        unique_id: `${alarmId}_events_v6`,
         icon: config.hadiscovery.events.icon,
         device: deviceConfig,
         qos: config.hadiscovery.sensors_qos
@@ -296,7 +320,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         payload_off: false,
         json_attributes_topic: config.topics.alarm.configStatus,
         json_attributes_template: '{{ value_json.connectionStatus | tojson }}',
-        unique_id: `${alarmId}_connection_status_v5`,
+        unique_id: `${alarmId}_connection_status_v6`,
         icon: 'mdi:alert-circle',
         device: deviceConfig,
         qos: config.hadiscovery.sensors_qos
@@ -334,7 +358,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         command_topic: _getTopic(config.topics.alarm.bypass, {
           zoneId: zoneId
         }),
-        unique_id: `${alarmId}_zone_${zone.id}_bypass_v5`,
+        unique_id: `${alarmId}_zone_${zone.id}_bypass_v6`,
         icon: config.hadiscovery.bypass.icon,
         device: getZoneDevice(zone),
         qos: config.hadiscovery.sensors_qos
@@ -366,7 +390,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         command_topic: config.topics.alarm.resetCache,
         payload_on: 'ON',
         payload_off: 'OFF',
-        unique_id: `${alarmId}_clear_cache_v5`,
+        unique_id: `${alarmId}_clear_cache_v6`,
         icon: 'mdi:reload-alert',
         device: deviceConfig,
         qos: config.hadiscovery.sensors_qos
@@ -396,7 +420,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         command_topic: config.topics.alarm.discovery,
         payload_on: 'ON',
         payload_off: 'OFF',
-        unique_id: `${alarmId}_clear_discovery_v5`,
+        unique_id: `${alarmId}_clear_discovery_v6`,
         icon: 'mdi:refresh',
         device: deviceConfig,
         qos: config.hadiscovery.sensors_qos
@@ -430,7 +454,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         command_topic: commandTopic,
         payload_on: 'cancel',
         payload_off: 'OFF',
-        unique_id: `${alarmId}_cancel_trigger_v5`,
+        unique_id: `${alarmId}_cancel_trigger_v6`,
         icon: 'mdi:alarm-light',
         device: deviceConfig,
         qos: config.hadiscovery.sensors_qos
@@ -451,7 +475,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       payload = {
         // Keep a friendly alarm name but avoid generic device name repetition in entities
         name: `${deviceConfig.name}${config.server.areas > 1 ? ' Area ' + areaId : ''}`,
-        unique_id: `${alarmId}_unit${config.server.areas > 1 ? '_area' + areaId : ''}_v5`,
+        unique_id: `${alarmId}_unit${config.server.areas > 1 ? '_area' + areaId : ''}_v6`,
         device: deviceConfig,
         availability: getAvailability(),
         state_topic: config.topics.alarm.state,
@@ -605,3 +629,4 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
     return validMessages
   }
 }
+
