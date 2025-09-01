@@ -28,24 +28,37 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       return 'unknown'
     }
     
+    // 🚨 DEBUG: Log the input
+    logger.debug(`cleanZoneName INPUT: "${zoneName}"`)
+    
     // Step 1: Extract zone prefix (e.g., "zone_15_" or "zona_15_")
     const zonePrefixMatch = zoneName.match(/^(zone_?\d+_|zona_?\d+_)/i)
     const zonePrefix = zonePrefixMatch ? zonePrefixMatch[1] : ''
     
+    // 🚨 DEBUG: Log the extracted prefix
+    logger.debug(`cleanZoneName EXTRACTED PREFIX: "${zonePrefix}"`)
+    
     // Step 2: Remove zone prefix to work on the name part
     let namePart = zoneName.replace(/^(zone_?\d+_|zona_?\d+_)/i, '')
+    
+    // 🚨 DEBUG: Log the name part
+    logger.debug(`cleanZoneName NAME PART: "${namePart}"`)
     
     // Step 3: Handle duplication patterns in the name part
     const parts = namePart.split('_')
     
     // Pattern: "name_name" -> "name"
     if (parts.length === 2 && parts[0] === parts[1]) {
-      return zonePrefix + parts[0]
+      const result = zonePrefix + parts[0]
+      logger.debug(`cleanZoneName RESULT (simple dup): "${result}"`)
+      return result
     }
     
     // Pattern: "word1_word2_word1_word2" -> "word1_word2"  
     if (parts.length === 4 && parts[0] === parts[2] && parts[1] === parts[3]) {
-      return zonePrefix + `${parts[0]}_${parts[1]}`
+      const result = zonePrefix + `${parts[0]}_${parts[1]}`
+      logger.debug(`cleanZoneName RESULT (4-part dup): "${result}"`)
+      return result
     }
     
     // Pattern: "word1_word2_word3_word1_word2_word3" -> "word1_word2_word3"
@@ -54,12 +67,16 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       const firstHalf = parts.slice(0, halfLength)
       const secondHalf = parts.slice(halfLength)
       if (firstHalf.every((part, index) => part === secondHalf[index])) {
-        return zonePrefix + firstHalf.join('_')
+        const result = zonePrefix + firstHalf.join('_')
+        logger.debug(`cleanZoneName RESULT (complex dup): "${result}"`)
+        return result
       }
     }
     
     // Return with zone prefix preserved
-    return zonePrefix + namePart
+    const result = zonePrefix + namePart
+    logger.debug(`cleanZoneName RESULT (no dup): "${result}"`)
+    return result
   }
 
   const deviceConfig = {
