@@ -37,7 +37,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
                 `${alarmId}_zone_${zone.id}`
       ],
       // Avoid repeating device name in per-zone device name to prevent entity naming conflicts
-      name: `${config.hadiscovery.zoneName} ${zone.id} ${zone.name}`,
+      name: `zone_${zone.id}_${zone.name}`,
       model: zone.type
     }
   }
@@ -91,8 +91,8 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
 
       const payload = {
         ...message.payload,
-        // Remove type prefix from entity name and avoid device name prefixes
-        name: zoneName + ' ' + zone.id + ' ' + zone.name,
+        // Add zone_X_ prefix to entity name to avoid duplications
+        name: `zone_${zone.id}_${zone.name}`,
         unique_id: `${alarmId}_zone_${zone.id}`
       }
 
@@ -166,8 +166,8 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       })
 
       payload = {
-        // Remove type prefix from entity name and avoid using device name as prefix
-        name: zoneName + ' ' + zone.id + ' ' + zone.name,
+        // Add zone_X_ prefix to entity name to avoid duplications
+        name: `zone_${zone.id}_${zone.name}_${type.toLowerCase()}`,
         availability: getAvailability(),
         device_class: deviceClass,
         value_template: valueTemplate,
@@ -265,7 +265,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       })
 
       payload = {
-        name: bypassName + ' ' + zoneName + ' ' + zone.id + ' ' + zone.name,
+        name: `zone_${zone.id}_${zone.name}_bypass`,
         availability: getAvailability(),
         state_topic: stateTopic,
         value_template: `{{ '${config.payloads.sensorOn}' if value_json.bypass else '${config.payloads.sensorOff}' }}`,
