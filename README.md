@@ -11,25 +11,28 @@ This fork provides **critical fixes and coexistence features** missing from the 
 | Feature | Original | Stinocon Enhanced |
 |---------|----------|-------------------|
 | **Bugs #45 & #51** | ❌ Entity flip-flop, HA 2024.2+ issues | ✅ **FIXED** |
-| **Coexistence** | ❌ Conflicts with other instances | ✅ **Side-by-side deployment** |
+| **Entity Naming** | ❌ Ugly _2, _3, _4 suffixes | ✅ **Clean descriptive names** |
 | **MQTT Prefix** | Fixed `ialarm` | ✅ **Configurable** (default: `ialarm-v2`) |
-| **Unique IDs** | May conflict | ✅ **Suffix support** (`_stinocon`) |
+| **Unique IDs** | May conflict | ✅ **Suffix support** (`_ialarmv2`) |
 | **Device Naming** | Generic | ✅ **Customizable suffix** |
 | **Manufacturer** | Fixed `Meian` | ✅ **Configurable branding** |
+| **Connection** | Single connection only | ⚠️ **Single connection only** (hardware limitation) |
 
 ## 🔧 Coexistence Configuration
 
-**NEW:** Configure custom branding to avoid conflicts:
+**IMPORTANT:** The iAlarm central unit allows only **one connection at a time**. You cannot run both the original and this enhanced version simultaneously.
+
+**However,** this enhanced version provides better configuration options and can replace the original addon:
 
 ```yaml
 branding:
   prefix: "ialarm-v2"              # MQTT topic prefix (vs "ialarm")
-  uniqueIdSuffix: "_stinocon"      # Prevents HA entity conflicts  
-  deviceNameSuffix: " (Stinocon)"  # UI clarity
-  manufacturer: "Stinocon Mods"    # Custom manufacturer
+  uniqueIdSuffix: "_ialarmv2"      # Prevents HA entity conflicts  
+  deviceNameSuffix: " (ialarm)"    # UI clarity
+  manufacturer: "Antifurto365"     # Custom manufacturer
 ```
 
-**Result:** Topics use `ialarm-v2/*` instead of `ialarm/*`, devices show as "iAlarm Security Panel (Stinocon)", and all entities have unique identifiers.
+**Result:** Topics use `ialarm-v2/*` instead of `ialarm/*`, devices show as "iAlarm Security Panel (ialarm)", and all entities have unique identifiers.
 
 ## Features
 - arm home
@@ -85,6 +88,14 @@ If HA had previously nulled names due to violations, new compliant names will be
 - **Original Repository:** https://github.com/maxill1/ialarm-mqtt
 
 ## Changelog (highlights)
+- **0.12.6** (Stinocon Enhanced)
+  - fix: eliminate automatic _2, _3, _4 suffixes from Home Assistant entity names
+  - feat: specific entity names for each zone sensor type (Stato, Batteria, Connessione)
+  - feat: clean, professional entity naming without ugly automatic suffixes
+- **0.12.5** (Stinocon Enhanced)
+  - feat: cleaner entity naming without redundancy
+  - feat: improved bypass entity naming
+  - feat: updated branding defaults for better coexistence
 - **0.12.3** (Stinocon Enhanced)
   - **BREAKING:** Enable coexistence with original ialarm-mqtt addon
   - feat: configurable MQTT prefix via `branding.prefix` (default: "ialarm-v2")
