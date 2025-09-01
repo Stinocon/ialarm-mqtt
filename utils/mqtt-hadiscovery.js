@@ -8,12 +8,14 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
   const logger = MeianLogger(config.verbose ? 'debug' : 'info')
 
   const alarmId = `alarm_mqtt_${(deviceInfo && deviceInfo.mac && deviceInfo.mac.split(':').join('')) || 'meian'}`
+  logger.info(`Generated alarmId: ${alarmId}`)
 
   const deviceConfig = {
     identifiers: `${alarmId}`,
     manufacturer: 'Meian',
     model: deviceInfo.name,
-    name: `${config.name || deviceInfo.name || 'Meian alarm'}`,
+    // Use a more specific device name to avoid entity name collisions with HA rules (entity name cannot equal or start with device name)
+    name: `${config.name || deviceInfo.name || 'iAlarm Security Panel'}`,
     sw_version: `ialarm-mqtt ${pjson.version}`
   }
   /*
@@ -28,7 +30,8 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       identifiers: [
                 `${alarmId}_zone_${zone.id}`
       ],
-      name: `${deviceConfig.name} ${config.hadiscovery.zoneName} ${zone.id} ${zone.name}`,
+      // Avoid repeating device name in per-zone device name to prevent entity naming conflicts
+      name: `${config.hadiscovery.zoneName} ${zone.id} ${zone.name}`,
       model: zone.type
     }
   }
@@ -82,6 +85,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
 
       const payload = {
         ...message.payload,
+        // Remove type prefix from entity name and avoid device name prefixes
         name: zoneName + ' ' + zone.id + ' ' + zone.name,
         unique_id: `${alarmId}_zone_${zone.id}`
       }
@@ -156,7 +160,8 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       })
 
       payload = {
-        name: type + ' ' + zoneName + ' ' + zone.id + ' ' + zone.name,
+        // Remove type prefix from entity name and avoid using device name as prefix
+        name: zoneName + ' ' + zone.id + ' ' + zone.name,
         availability: getAvailability(),
         device_class: deviceClass,
         value_template: valueTemplate,
@@ -166,9 +171,12 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         json_attributes_template: '{{ value_json | tojson }}',
         state_topic: stateTopic,
         unique_id: `${alarmId}_zone_${zone.id}_${type.toLowerCase()}`,
+        // Helpful logs to diagnose duplicate discovery issues
+        // Note: logging here is safe; payload is still an object
         device: getZoneDevice(zone),
         qos: config.hadiscovery.sensors_qos
       }
+      logger.info(`Zone unique_id: ${payload.unique_id}`)
     }
     return {
       topic: _getTopic(topic, {
@@ -284,7 +292,8 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
     let payload = ''
     if (!reset) {
       payload = {
-        name: `${deviceConfig.name} clean cache`,
+        // Avoid device name prefix to comply with HA 2024.2.0 naming rules
+        name: 'Cache Reset',
         availability: getAvailability(),
         state_topic: config.topics.alarm.configStatus,
         value_template: '{{ value_json.cacheClear }}',
@@ -313,7 +322,8 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
     let payload = ''
     if (!reset) {
       payload = {
-        name: `${deviceConfig.name} clean discovery`,
+        // Avoid device name prefix to comply with HA 2024.2.0 naming rules
+        name: 'Discovery Reset',
         availability: getAvailability(),
         state_topic: config.topics.alarm.configStatus,
         value_template: '{{ value_json.discoveryClear }}',
@@ -346,7 +356,8 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         areaId: areaId
       })
       payload = {
-        name: `${deviceConfig.name} clean triggered`,
+        // Avoid device name prefix to comply with HA 2024.2.0 naming rules
+        name: 'Clear Triggered',
         availability: getAvailability(),
         state_topic: config.topics.alarm.configStatus,
         value_template: '{{ value_json.cancel }}',
@@ -372,6 +383,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         areaId: areaId
       })
       payload = {
+        // Keep a friendly alarm name but avoid generic device name repetition in entities
         name: `${deviceConfig.name}${config.server.areas > 1 ? ' Area ' + areaId : ''}`,
         unique_id: `${alarmId}_unit${config.server.areas > 1 ? '_area' + areaId : ''}`,
         device: deviceConfig,

@@ -9,6 +9,11 @@ export const MqttPublisher = function (config) {
 
   let client
 
+  // Discovery guard to prevent duplicate HA discovery publications across restarts or quick re-triggers
+  let discoveryInProgress = false
+  let lastDiscoveryCompletedAt = 0
+  const DISCOVERY_COOLDOWN_MS = 15000
+
   const _cache = {
     data: {},
     enabled: config.mqtt.cache !== undefined,
@@ -452,24 +457,47 @@ export const MqttPublisher = function (config) {
   }
 
   this.publishHomeAssistantMqttDiscovery = function (zones, on, deviceInfo) {
-    // Reset of 128 zones
-    const messages = new IAlarmHaDiscovery(config, zones, true, deviceInfo).createMessages()
-    for (let index = 0; index < messages.length; index++) {
-      const m = messages[index]
+    const now = Date.now()
+    if (discoveryInProgress) {
+      logger.warn('Discovery already in progress, skipping...')
+      return
+    }
+    if (now - lastDiscoveryCompletedAt < DISCOVERY_COOLDOWN_MS) {
+      logger.info(`Discovery cooldown active (${DISCOVERY_COOLDOWN_MS}ms). Skipping.`)
+      return
+    }
+
+    discoveryInProgress = true
+
+    // First pass: publish reset cleanup only if discovery is requested OR if HA discovery is enabled
+    const resetMessages = new IAlarmHaDiscovery(config, zones, true, deviceInfo).createMessages()
+    logger.info(`Publishing HA discovery reset for ${resetMessages.length} topics`)
+    for (let index = 0; index < resetMessages.length; index++) {
+      const m = resetMessages[index]
+      logger.debug && logger.debug(`Discovery RESET topic: ${m.topic}`)
       _publishAndLog(m.topic, m.payload, { retain: true })
     }
 
-    if (on) {
-      logger.info('Setting up Home assistant discovery...')
-      // let's wait HA processes all the entity reset, then submit again the discovered entity
-      setTimeout(function () {
-        // mqtt discovery messages to publish
-        const messages = new IAlarmHaDiscovery(config, zones, false, deviceInfo).createMessages()
-        for (let index = 0; index < messages.length; index++) {
-          const m = messages[index]
-          _publishAndLog(m.topic, m.payload, { retain: true })// config
-        }
-      }, 5000)
+    if (!on) {
+      // Only reset requested
+      logger.info('HA discovery reset requested with discovery disabled. Skipping entity publish.')
+      discoveryInProgress = false
+      lastDiscoveryCompletedAt = Date.now()
+      return
     }
+
+    logger.info('Setting up Home Assistant discovery...')
+    // Second pass: actual discovery publish, delayed to ensure HA processed cleanup
+    setTimeout(function () {
+      const discoveryMessages = new IAlarmHaDiscovery(config, zones, false, deviceInfo).createMessages()
+      logger.info(`Publishing HA discovery entities for ${discoveryMessages.length} topics`)
+      for (let index = 0; index < discoveryMessages.length; index++) {
+        const m = discoveryMessages[index]
+        logger.debug && logger.debug(`Discovery topic: ${m.topic}`)
+        _publishAndLog(m.topic, m.payload, { retain: true })
+      }
+      discoveryInProgress = false
+      lastDiscoveryCompletedAt = Date.now()
+    }, 5000)
   }
 }
