@@ -92,8 +92,8 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
 
       const payload = {
         ...message.payload,
-        // Remove type prefix from entity name and avoid device name prefixes
-        name: zoneName + ' ' + zone.id + ' ' + zone.name,
+        // Clean entity name without redundancy
+        name: zone.name,
         unique_id: `${alarmId}_zone_${zone.id}`
       }
 
@@ -167,8 +167,8 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       })
 
       payload = {
-        // Remove type prefix from entity name and avoid using device name as prefix
-        name: zoneName + ' ' + zone.id + ' ' + zone.name,
+        // Clean entity name without redundancy
+        name: zone.name,
         availability: getAvailability(),
         device_class: deviceClass,
         value_template: valueTemplate,
@@ -266,7 +266,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       })
 
       payload = {
-        name: bypassName + ' ' + zoneName + ' ' + zone.id + ' ' + zone.name,
+        name: zone.name + ' ' + bypassName,
         availability: getAvailability(),
         state_topic: stateTopic,
         value_template: `{{ '${config.payloads.sensorOn}' if value_json.bypass else '${config.payloads.sensorOff}' }}`,

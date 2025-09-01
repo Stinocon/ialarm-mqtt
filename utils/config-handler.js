@@ -74,10 +74,10 @@ function initDefaults (config, configFile) {
 
     // Branding/customization for coexistence with upstream addon
     _checkConfig(config, ['branding'], 0, {})
-    _checkConfig(config, ['branding', 'prefix'], 0, 'ialarm')
-    _checkConfig(config, ['branding', 'uniqueIdSuffix'], 0, '')
-    _checkConfig(config, ['branding', 'deviceNameSuffix'], 0, '')
-    _checkConfig(config, ['branding', 'manufacturer'], 0, 'Meian')
+    _checkConfig(config, ['branding', 'prefix'], 0, 'ialarm-v2')
+    _checkConfig(config, ['branding', 'uniqueIdSuffix'], 0, '_ialarmv2')
+    _checkConfig(config, ['branding', 'deviceNameSuffix'], 0, ' (ialarm)')
+    _checkConfig(config, ['branding', 'manufacturer'], 0, 'Antifurto365')
 
     // Compute topic/discovery base keys from branding
     const topicPrefix = (config.branding && config.branding.prefix) || 'ialarm'
