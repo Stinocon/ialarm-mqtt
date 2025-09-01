@@ -1,6 +1,6 @@
 {
     "name": "ialarm-mqtt",
-    "version": "0.15.7",
+    "version": "0.15.8",
     "description": "Enhanced iAlarm to MQTT bridge with clean entity naming",
     "type": "module",
     "repository": {
