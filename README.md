@@ -4,12 +4,12 @@
 
 A MQTT bridge for iAlarm (https://www.antifurtocasa365.it/) and other Chinese "TCP IP" alarm systems like Meian and Emooluxr (via `ialarm` library).
 
-## 🆚 Stinocon vs Original
+## 🆚 Enhanced vs Original
 
-This fork provides **critical fixes and coexistence features** missing from the original:
+This fork provides **critical fixes and improvements** over the original:
 
-| Feature | Original | Stinocon Enhanced |
-|---------|----------|-------------------|
+| Feature | Original | Enhanced Version |
+|---------|----------|------------------|
 | **Bugs #45 & #51** | ❌ Entity flip-flop, HA 2024.2+ issues | ✅ **FIXED** |
 | **Entity Naming** | ❌ Ugly _2, _3, _4 suffixes | ✅ **Clean descriptive names** |
 | **MQTT Prefix** | Fixed `ialarm` | ✅ **Configurable** (default: `ialarm-v2`) |
@@ -88,15 +88,15 @@ If HA had previously nulled names due to violations, new compliant names will be
 - **Original Repository:** https://github.com/maxill1/ialarm-mqtt
 
 ## Changelog (highlights)
-- **0.12.6** (Stinocon Enhanced)
+- **0.12.6** (Enhanced)
   - fix: eliminate automatic _2, _3, _4 suffixes from Home Assistant entity names
   - feat: specific entity names for each zone sensor type (Stato, Batteria, Connessione)
   - feat: clean, professional entity naming without ugly automatic suffixes
-- **0.12.5** (Stinocon Enhanced)
+- **0.12.5** (Enhanced)
   - feat: cleaner entity naming without redundancy
   - feat: improved bypass entity naming
   - feat: updated branding defaults for better coexistence
-- **0.12.3** (Stinocon Enhanced)
+- **0.12.3** (Enhanced)
   - **BREAKING:** Enable coexistence with original ialarm-mqtt addon
   - feat: configurable MQTT prefix via `branding.prefix` (default: "ialarm-v2")
   - feat: configurable unique_id suffix via `branding.uniqueIdSuffix` 
