@@ -12,6 +12,7 @@ export const MqttPublisher = function (config) {
   // Discovery guard to prevent duplicate HA discovery publications across restarts or quick re-triggers
   let discoveryInProgress = false
   let lastDiscoveryCompletedAt = 0
+  let discoveryStartTime = 0
   const DISCOVERY_COOLDOWN_MS = 15000
 
   const _cache = {
@@ -459,8 +460,16 @@ export const MqttPublisher = function (config) {
   this.publishHomeAssistantMqttDiscovery = function (zones, on, deviceInfo) {
     const now = Date.now()
     if (discoveryInProgress) {
-      logger.warn('Discovery already in progress, skipping...')
-      return
+      // Check if discovery has been stuck for too long (more than 60 seconds)
+      const timeSinceStart = now - (lastDiscoveryCompletedAt || 0)
+      if (timeSinceStart > 60000) {
+        logger.warn(`Discovery stuck for ${timeSinceStart}ms, forcing reset...`)
+        discoveryInProgress = false
+        lastDiscoveryCompletedAt = 0
+      } else {
+        logger.warn('Discovery already in progress, skipping...')
+        return
+      }
     }
     if (now - lastDiscoveryCompletedAt < DISCOVERY_COOLDOWN_MS) {
       logger.info(`Discovery cooldown active (${DISCOVERY_COOLDOWN_MS}ms). Skipping.`)
@@ -468,6 +477,17 @@ export const MqttPublisher = function (config) {
     }
 
     discoveryInProgress = true
+    discoveryStartTime = Date.now()
+    logger.info(`Starting discovery process at ${new Date(discoveryStartTime).toISOString()}`)
+    
+    // Safety timeout to reset discovery flag if it gets stuck
+    const safetyTimeout = setTimeout(() => {
+      if (discoveryInProgress) {
+        logger.warn('Discovery safety timeout reached, resetting discovery flag')
+        discoveryInProgress = false
+        lastDiscoveryCompletedAt = Date.now()
+      }
+    }, 30000) // 30 seconds safety timeout
 
     // First pass: publish reset cleanup only if discovery is requested OR if HA discovery is enabled
     const resetMessages = new IAlarmHaDiscovery(config, zones, true, deviceInfo).createMessages()
@@ -481,6 +501,7 @@ export const MqttPublisher = function (config) {
     if (!on) {
       // Only reset requested
       logger.info('HA discovery reset requested with discovery disabled. Skipping entity publish.')
+      clearTimeout(safetyTimeout) // Clear timeout on early exit
       discoveryInProgress = false
       lastDiscoveryCompletedAt = Date.now()
       return
@@ -496,8 +517,17 @@ export const MqttPublisher = function (config) {
         logger.debug && logger.debug(`Discovery topic: ${m.topic}`)
         _publishAndLog(m.topic, m.payload, { retain: true })
       }
+      clearTimeout(safetyTimeout) // Clear timeout on normal completion
       discoveryInProgress = false
       lastDiscoveryCompletedAt = Date.now()
     }, 5000)
+  }
+
+  // Function to force reset discovery flag (useful for debugging)
+  this.resetDiscoveryFlag = function () {
+    logger.info('Manually resetting discovery flag')
+    discoveryInProgress = false
+    lastDiscoveryCompletedAt = 0
+    discoveryStartTime = 0
   }
 }
