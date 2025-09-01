@@ -467,17 +467,24 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
 
   this.createMessages = function () {
     const messages = []
+    logger.info(`IAlarmHaDiscovery.createMessages called: reset=${reset}, zones=${zones.length}`)
 
     // cleanup old topics structures
     if (reset) {
+      logger.info('Creating reset cleanup messages...')
       messages.push(configCleanup('${discoveryPrefix}/alarm_control_panel/ialarm/config'))
       messages.push(configCleanup('${discoveryPrefix}/sensor/ialarm/error/config'))
       messages.push(configCleanup('ialarm/alarm/error')) 
+      logger.info(`Created ${messages.length} reset cleanup messages`)
     }
 
     //iterating all 128 zones
     const maxZones = configHandler.getMaxZones()
+    logger.info(`Starting zone iteration: maxZones=${maxZones}, zones.length=${zones.length}`)
     for (let i = 0; i < maxZones; i++) {
+      if (i % 10 === 0) {
+        logger.info(`Processing zone ${i}/${maxZones}...`)
+      }
       let zone
       if (reset) {
         zone = { id: i + 1 }
@@ -538,6 +545,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       messages.push(configSensorEvents())
     }
 
+    logger.info(`IAlarmHaDiscovery.createMessages completed: created ${messages.length} messages`)
     return messages
   }
 }
