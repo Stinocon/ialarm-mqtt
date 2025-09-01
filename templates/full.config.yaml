@@ -59,11 +59,11 @@ mqtt:
   port: "1883"
   username: admin
   password: password
-  clientId: ialarm-mqtt
+  clientId: ""
   cache: 5m
   retain: true
 verbose: false
-name: ""
+name: Alarm
 topics:
   availability: ialarm/alarm/availability
   alarm:
@@ -170,7 +170,6 @@ hadiscovery:
     default:
       device_class: safety
   events:
-    name: last event
     icon: mdi:message-alert
   bypass:
     name: Bypass
