@@ -482,6 +482,7 @@ export const ialarmMqtt = (config) => {
     publisher.publishConnectionStatus(!MeianConnection.status.isDisconnected(), 'OK')
 
     // home assistant mqtt discovery (if not enabled it will reset all /config topics)
+    logger.info(`Calling discovery with enabled=${enabled}, zones=${Object.values(zonesCache.zones).length}`)
     publisher.publishHomeAssistantMqttDiscovery(Object.values(zonesCache.zones), enabled, config.deviceInfo)
     if (!enabled) {
       logger.warn('Home assistant discovery disabled (empty config.hadiscovery)')

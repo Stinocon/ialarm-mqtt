@@ -79,8 +79,8 @@ function initDefaults (config, configFile) {
     _checkConfig(config, ['branding', 'deviceNameSuffix'], 0, ' (ialarm)')
     _checkConfig(config, ['branding', 'manufacturer'], 0, 'Antifurto365')
 
-    // Compute topic/discovery base keys from branding
-    const topicPrefix = (config.branding && config.branding.prefix) || 'ialarm'
+    // Compute topic/discovery base keys from branding (use default if not set)
+    const topicPrefix = (config.branding && config.branding.prefix) || 'ialarm-v2'
     const discoveryDeviceKey = topicPrefix
 
     _checkConfig(config, ['topics'], 0, {})

@@ -459,6 +459,7 @@ export const MqttPublisher = function (config) {
 
   this.publishHomeAssistantMqttDiscovery = function (zones, on, deviceInfo) {
     const now = Date.now()
+    logger.info(`Discovery called: on=${on}, zones=${zones ? zones.length : 0}, discoveryInProgress=${discoveryInProgress}`)
     if (discoveryInProgress) {
       // Check if discovery has been stuck for too long (more than 60 seconds)
       const timeSinceStart = now - (lastDiscoveryCompletedAt || 0)
@@ -467,7 +468,7 @@ export const MqttPublisher = function (config) {
         discoveryInProgress = false
         lastDiscoveryCompletedAt = 0
       } else {
-        logger.warn('Discovery already in progress, skipping...')
+        logger.warn(`Discovery already in progress, skipping... (stuck for ${timeSinceStart}ms)`)
         return
       }
     }
