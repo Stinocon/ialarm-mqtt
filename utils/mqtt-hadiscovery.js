@@ -18,9 +18,9 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
   logger.info(`Generated alarmId: ${alarmId}`)
 
   /**
-   * Clean zone name by removing duplication patterns
+   * Clean zone name by removing duplication patterns - KEEP ZONE PREFIX
    * @param {string} zoneName - The original zone name
-   * @returns {string} - Cleaned zone name without duplications
+   * @returns {string} - Cleaned zone name without duplications but with zone prefix
    */
   function cleanZoneName(zoneName) {
     // Handle undefined/null zoneName
@@ -28,20 +28,24 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       return 'unknown'
     }
     
-    // Step 1: Remove zona_X_ prefix if present
-    let cleaned = zoneName.replace(/^zona_\d+_/, '')
+    // Step 1: Extract zone prefix (e.g., "zone_15_" or "zona_15_")
+    const zonePrefixMatch = zoneName.match(/^(zone_?\d+_|zona_?\d+_)/i)
+    const zonePrefix = zonePrefixMatch ? zonePrefixMatch[1] : ''
     
-    // Step 2: Handle various duplication patterns
-    const parts = cleaned.split('_')
+    // Step 2: Remove zone prefix to work on the name part
+    let namePart = zoneName.replace(/^(zone_?\d+_|zona_?\d+_)/i, '')
+    
+    // Step 3: Handle duplication patterns in the name part
+    const parts = namePart.split('_')
     
     // Pattern: "name_name" -> "name"
     if (parts.length === 2 && parts[0] === parts[1]) {
-      return parts[0]
+      return zonePrefix + parts[0]
     }
     
     // Pattern: "word1_word2_word1_word2" -> "word1_word2"  
     if (parts.length === 4 && parts[0] === parts[2] && parts[1] === parts[3]) {
-      return `${parts[0]}_${parts[1]}`
+      return zonePrefix + `${parts[0]}_${parts[1]}`
     }
     
     // Pattern: "word1_word2_word3_word1_word2_word3" -> "word1_word2_word3"
@@ -50,11 +54,12 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       const firstHalf = parts.slice(0, halfLength)
       const secondHalf = parts.slice(halfLength)
       if (firstHalf.every((part, index) => part === secondHalf[index])) {
-        return firstHalf.join('_')
+        return zonePrefix + firstHalf.join('_')
       }
     }
     
-    return cleaned
+    // Return with zone prefix preserved
+    return zonePrefix + namePart
   }
 
   const deviceConfig = {
@@ -135,7 +140,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         ...message.payload,
         // Use specific entity name to avoid automatic suffixes
         name: `${cleanedName} Stato`,
-        unique_id: `${alarmId}_zone_${zone.id}_fault_v5`
+        unique_id: `${alarmId}_zone_${zone.id}_fault_v6`
       }
 
       // icon is not supported on binary sensor, only switches, light, sensor, etc
@@ -218,7 +223,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         json_attributes_topic: stateTopic,
         json_attributes_template: '{{ value_json | tojson }}',
         state_topic: stateTopic,
-        unique_id: `${alarmId}_zone_${zone.id}_${type.toLowerCase()}_v5`,
+        unique_id: `${alarmId}_zone_${zone.id}_${type.toLowerCase()}_v6`,
         device: getZoneDevice(zone),
         qos: config.hadiscovery.sensors_qos
       }
@@ -248,7 +253,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         value_template: '{{value_json.description}}',
         json_attributes_topic: config.topics.alarm.event,
         json_attributes_template: '{{ value_json | tojson }}',
-        unique_id: `${alarmId}_events_v5`,
+        unique_id: `${alarmId}_events_v6`,
         icon: config.hadiscovery.events.icon,
         device: deviceConfig,
         qos: config.hadiscovery.sensors_qos
@@ -276,7 +281,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         payload_off: false,
         json_attributes_topic: config.topics.alarm.configStatus,
         json_attributes_template: '{{ value_json.connectionStatus | tojson }}',
-        unique_id: `${alarmId}_connection_status_v5`,
+        unique_id: `${alarmId}_connection_status_v6`,
         icon: 'mdi:alert-circle',
         device: deviceConfig,
         qos: config.hadiscovery.sensors_qos
@@ -314,7 +319,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         command_topic: _getTopic(config.topics.alarm.bypass, {
           zoneId: zoneId
         }),
-        unique_id: `${alarmId}_zone_${zone.id}_bypass_v5`,
+        unique_id: `${alarmId}_zone_${zone.id}_bypass_v6`,
         icon: config.hadiscovery.bypass.icon,
         device: getZoneDevice(zone),
         qos: config.hadiscovery.sensors_qos
@@ -346,7 +351,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         command_topic: config.topics.alarm.resetCache,
         payload_on: 'ON',
         payload_off: 'OFF',
-        unique_id: `${alarmId}_clear_cache_v5`,
+        unique_id: `${alarmId}_clear_cache_v6`,
         icon: 'mdi:reload-alert',
         device: deviceConfig,
         qos: config.hadiscovery.sensors_qos
@@ -376,7 +381,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         command_topic: config.topics.alarm.discovery,
         payload_on: 'ON',
         payload_off: 'OFF',
-        unique_id: `${alarmId}_clear_discovery_v5`,
+        unique_id: `${alarmId}_clear_discovery_v6`,
         icon: 'mdi:refresh',
         device: deviceConfig,
         qos: config.hadiscovery.sensors_qos
@@ -410,7 +415,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         command_topic: commandTopic,
         payload_on: 'cancel',
         payload_off: 'OFF',
-        unique_id: `${alarmId}_cancel_trigger_v5`,
+        unique_id: `${alarmId}_cancel_trigger_v6`,
         icon: 'mdi:alarm-light',
         device: deviceConfig,
         qos: config.hadiscovery.sensors_qos
@@ -431,7 +436,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       payload = {
         // Keep a friendly alarm name but avoid generic device name repetition in entities
         name: `${deviceConfig.name}${config.server.areas > 1 ? ' Area ' + areaId : ''}`,
-        unique_id: `${alarmId}_unit${config.server.areas > 1 ? '_area' + areaId : ''}_v5`,
+        unique_id: `${alarmId}_unit${config.server.areas > 1 ? '_area' + areaId : ''}_v6`,
         device: deviceConfig,
         availability: getAvailability(),
         state_topic: config.topics.alarm.state,
