@@ -94,7 +94,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         ...message.payload,
         // Use specific entity name to avoid automatic suffixes
         name: `${zone.name} Stato`,
-        unique_id: `${alarmId}_zone_${zone.id}`
+        unique_id: `${alarmId}_zone_${zone.id}_fault_v2`
       }
 
       // icon is not supported on binary sensor, only switches, light, sensor, etc
@@ -177,7 +177,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         json_attributes_topic: stateTopic,
         json_attributes_template: '{{ value_json | tojson }}',
         state_topic: stateTopic,
-        unique_id: `${alarmId}_zone_${zone.id}_${type.toLowerCase()}`,
+        unique_id: `${alarmId}_zone_${zone.id}_${type.toLowerCase()}_v2`,
         // Helpful logs to diagnose duplicate discovery issues
         // Note: logging here is safe; payload is still an object
         device: getZoneDevice(zone),
@@ -275,7 +275,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         command_topic: _getTopic(config.topics.alarm.bypass, {
           zoneId: zoneId
         }),
-        unique_id: `${alarmId}_zone_${zone.id}_bypass`,
+        unique_id: `${alarmId}_zone_${zone.id}_bypass_v2`,
         icon: config.hadiscovery.bypass.icon,
         device: getZoneDevice(zone),
         qos: config.hadiscovery.sensors_qos
