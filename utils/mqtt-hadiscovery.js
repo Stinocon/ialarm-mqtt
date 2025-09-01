@@ -18,87 +18,79 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
   logger.info(`Generated alarmId: ${alarmId}`)
 
   /**
-   * Clean zone name - PRESERVES zone_X_ prefix and removes duplications
-   * @param {string} zoneName - Original zone name like "zona_15_pir_sala_pir_sala"
-   * @returns {string} - Clean name like "zone_15_pir_sala"
+   * Clean zone name - REMOVES zone prefix and duplications for clean Entity IDs
+   * @param {string} zoneName - Original zone name like "zona_15_pir_corridoio_pir_corridoio"
+   * @returns {string} - Clean name like "pir_corridoio"
    */
   function cleanZoneName(zoneName) {
     logger.debug(`cleanZoneName INPUT: "${zoneName}"`)
     
     if (!zoneName || typeof zoneName !== 'string') {
-      logger.debug('cleanZoneName: Invalid input, returning zone_0_unknown')
-      return 'zone_0_unknown'
+      logger.debug('cleanZoneName: Invalid input, returning empty string')
+      return ''
     }
     
     let cleaned = zoneName.toLowerCase().trim()
     if (cleaned === '') {
-      logger.debug('cleanZoneName: Empty input, returning zone_0_unknown')
-      return 'zone_0_unknown'
+      logger.debug('cleanZoneName: Empty input, returning empty string')
+      return ''
     }
     
-    // Step 1: Extract zone number and create standardized prefix
-    let zoneNumber = '0'
-    let nameWithoutPrefix = cleaned
+    // Step 1: Remove zone prefixes (zona_15_, zone_15_, etc.)
+    cleaned = cleaned.replace(/^zona?_\d+_/, '')
+    logger.debug(`cleanZoneName: After prefix removal: "${cleaned}"`)
     
-    // Match patterns like "zona_15_" or "zone_15_"
-    const zoneMatch = cleaned.match(/^zona?_?(\d+)_?(.*)$/i)
-    if (zoneMatch) {
-      zoneNumber = zoneMatch[1]
-      nameWithoutPrefix = zoneMatch[2] || ''
-      logger.debug(`cleanZoneName: Found zone ${zoneNumber}, name part: "${nameWithoutPrefix}"`)
-    } else {
-      // If no zone prefix found, try to extract from zone ID or default to zone 0
-      logger.debug(`cleanZoneName: No zone prefix found in "${cleaned}", using zone_0`)
-    }
-    
-    const standardPrefix = `zone_${zoneNumber}_`
-    logger.debug(`cleanZoneName: Standard prefix: "${standardPrefix}"`)
-    
-    // Step 2: Clean the name part (remove duplications)
-    if (!nameWithoutPrefix || nameWithoutPrefix.trim() === '') {
-      const result = `${standardPrefix}unknown`
-      logger.debug(`cleanZoneName: Empty name part, result: "${result}"`)
-      return result
-    }
-    
-    // Split name part into words
-    const parts = nameWithoutPrefix.split(/[_\s-]+/).filter(part => part.length > 0)
-    logger.debug(`cleanZoneName: Name parts: [${parts.join(', ')}]`)
-    
-    // Remove complete duplication patterns
-    let cleanedParts = parts
-    const halfLength = Math.floor(parts.length / 2)
-    
-    // Check for full duplication: ["pir", "sala", "pir", "sala"] -> ["pir", "sala"]
-    if (parts.length >= 2 && parts.length % 2 === 0 && halfLength > 0) {
-      const firstHalf = parts.slice(0, halfLength)
-      const secondHalf = parts.slice(halfLength)
+    // Step 2: Fix duplicazioni (pir_corridoio_pir_corridoio -> pir_corridoio)
+    const parts = cleaned.split('_')
+    if (parts.length >= 2) {
+      const half = Math.floor(parts.length / 2)
+      const firstHalf = parts.slice(0, half)
+      const secondHalf = parts.slice(half)
       
-      const isFullDuplication = firstHalf.every((part, index) => part === secondHalf[index])
-      if (isFullDuplication) {
-        cleanedParts = firstHalf
-        logger.debug(`cleanZoneName: Removed full duplication, new parts: [${cleanedParts.join(', ')}]`)
+      if (firstHalf.join('_') === secondHalf.join('_')) {
+        cleaned = firstHalf.join('_')
+        logger.debug(`cleanZoneName: Removed full duplication: "${cleaned}"`)
       }
     }
     
-    // Remove consecutive duplicates: ["camera", "camera", "sala"] -> ["camera", "sala"]
-    const deduped = []
-    for (let i = 0; i < cleanedParts.length; i++) {
-      const currentPart = cleanedParts[i]
-      if (i === 0 || currentPart !== cleanedParts[i - 1]) {
-        deduped.push(currentPart)
-      }
+    // Step 3: Fix pattern "parola_parola"
+    cleaned = cleaned.replace(/^(\w+)_\1$/, '$1')
+    logger.debug(`cleanZoneName: After single word duplication fix: "${cleaned}"`)
+    
+    // Step 4: Standardizza nomi italiani
+    const nameMapping = {
+      'finestra_ingress': 'finestra_ingresso',
+      'finestra_sx_sala': 'finestra_sinistra_sala',
+      'finestra_dx_sala': 'finestra_destra_sala',
+      'porta_ingress': 'porta_ingresso',
+      'porta_sx_sala': 'porta_sinistra_sala',
+      'porta_dx_sala': 'porta_destra_sala'
     }
     
-    if (deduped.length !== cleanedParts.length) {
-      logger.debug(`cleanZoneName: Removed consecutive duplicates: [${deduped.join(', ')}]`)
-    }
-    
-    // Step 3: Build final result
-    const cleanedNamePart = deduped.join('_')
-    const result = `${standardPrefix}${cleanedNamePart}`
-    
+    const result = nameMapping[cleaned] || cleaned
     logger.debug(`cleanZoneName: FINAL RESULT: "${zoneName}" -> "${result}"`)
+    return result
+  }
+
+  /**
+   * Get clean device name for display (readable format)
+   * @param {string} zoneName - The original zone name
+   * @returns {string} - Clean display name like "Finestra Ingresso"
+   */
+  function getCleanDeviceName(zoneName) {
+    const cleaned = cleanZoneName(zoneName)
+    
+    if (!cleaned) {
+      return 'Unknown Device'
+    }
+    
+    const result = cleaned
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
+      .replace(/Pir/g, 'PIR')
+    
+    logger.debug(`getCleanDeviceName: "${zoneName}" -> "${result}"`)
     return result
   }
 
@@ -109,53 +101,9 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
    * @returns {string} - Format: "Porta Studio Batteria"
    */
   function createElegantName(zoneName, type) {
-    if (!zoneName || typeof zoneName !== 'string') {
-      return 'Unknown Device'
-    }
-    
-    let cleaned = zoneName.trim()
-    if (cleaned === '') {
-      return 'Unknown Device'
-    }
-    
-    // Step 1: Remove zone prefix for display
-    cleaned = cleaned.replace(/^zona?_?\d+_?/gi, '')
-    
-    // Step 2: Handle duplications  
-    const parts = cleaned.split(/[_\s-]+/).filter(part => part.length > 0)
-    
-    // Remove complete duplication patterns
-    const halfLength = Math.floor(parts.length / 2)
-    if (parts.length % 2 === 0 && halfLength > 0) {
-      const firstHalf = parts.slice(0, halfLength)
-      const secondHalf = parts.slice(halfLength)
-      if (firstHalf.every((part, index) => part.toLowerCase() === secondHalf[index].toLowerCase())) {
-        const displayBase = firstHalf
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-          .join(' ')
-        
-        const typeDisplay = getTypeDisplayName(type)
-        const result = typeDisplay ? `${displayBase} ${typeDisplay}` : displayBase
-        logger.debug(`createElegantName: "${zoneName}" (${type}) -> "${result}"`)
-        return result
-      }
-    }
-    
-    // Remove simple duplicates
-    const deduped = []
-    for (let i = 0; i < parts.length; i++) {
-      const currentPart = parts[i]
-      if (i === 0 || currentPart.toLowerCase() !== parts[i - 1].toLowerCase()) {
-        deduped.push(currentPart)
-      }
-    }
-    
-    const displayBase = deduped
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ')
-    
+    const baseName = getCleanDeviceName(zoneName)
     const typeDisplay = getTypeDisplayName(type)
-    const result = typeDisplay ? `${displayBase} ${typeDisplay}` : displayBase
+    const result = typeDisplay ? `${baseName} ${typeDisplay}` : baseName
     
     logger.debug(`createElegantName: "${zoneName}" (${type}) -> "${result}"`)
     return result || 'Unknown Device'
@@ -179,6 +127,33 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
     return typeMap[type.toLowerCase()] || ''
   }
 
+  /**
+   * Generate clean unique ID for entities
+   * @param {string} zoneName - The zone name
+   * @param {string} type - The sensor type
+   * @param {number} zoneId - The zone ID
+   * @returns {string} - Clean unique ID like "ialarm_finestra_ingresso_battery_13"
+   */
+  function generateCleanUniqueId(zoneName, type, zoneId) {
+    const cleanBase = cleanZoneName(zoneName).replace(/[^a-z0-9_]/g, '')
+    
+    // Map types to English for unique ID
+    const typeMap = {
+      'battery': 'battery',
+      'bypass': 'bypass',
+      'fault': 'fault',
+      'alarm': 'alarm',
+      'connectivity': 'connectivity',
+      'motion': 'motion'
+    }
+    
+    const cleanType = typeMap[type.toLowerCase()] || type.toLowerCase()
+    const result = `ialarm_${cleanBase}_${cleanType}_${zoneId}`
+    
+    logger.debug(`generateCleanUniqueId: "${zoneName}" (${type}, ${zoneId}) -> "${result}"`)
+    return result
+  }
+
   const deviceConfig = {
     identifiers: `${alarmId}`,
     manufacturer: (config.branding && config.branding.manufacturer) || 'Meian',
@@ -197,8 +172,8 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
     return {
       ...deviceConfig,
       identifiers: [`${alarmId}_zone_${zone.id}`],
-      // Use elegant name for device display  
-      name: createElegantName(zone.name, ''),  // "Finestra Sx Sala"
+      // Use clean device name for display
+      name: getCleanDeviceName(zone.name),  // "Finestra Ingresso"
       model: zone.type || 'Binary Sensor'
     }
   }
@@ -235,8 +210,8 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
      * @returns
      */
   const configSensorFault = function (zone, i) {
-    const cleanEntityBase = cleanZoneName(zone.name)  // "zone_15_pir_sala"
-    const entityName = `${cleanEntityBase}_stato`     // "zone_15_pir_sala_stato"
+    const cleanName = cleanZoneName(zone.name)  // "pir_corridoio"
+    const entityName = `${cleanName}_stato`     // "pir_corridoio_stato"
     
     logger.debug(`configSensorFault: Zone ${zone.id}, entity name: "${entityName}"`)
     
@@ -260,8 +235,8 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         ...message.payload,
         // Use entity name directly
         name: entityName,
-        // Override unique_id to match entity name
-        unique_id: `${alarmId}_${entityName}_v10`
+        // Use clean unique ID
+        unique_id: generateCleanUniqueId(zone.name, 'fault', zone.id)
       }
 
       // icon is not supported on binary sensor, only switches, light, sensor, etc
@@ -282,8 +257,8 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
      * @returns
      */
   const configSensorBattery = function (zone, i) {
-    const cleanEntityBase = cleanZoneName(zone.name)  // "zone_15_pir_sala"  
-    const entityName = `${cleanEntityBase}_batteria`  // "zone_15_pir_sala_batteria"
+    const cleanName = cleanZoneName(zone.name)  // "finestra_ingresso"
+    const entityName = `${cleanName}_batteria`  // "finestra_ingresso_batteria"
     
     logger.debug(`configSensorBattery: Zone ${zone.id}, entity name: "${entityName}"`)
     
@@ -291,7 +266,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       config.hadiscovery.topics.sensorBatteryConfig, false, entityName)
     
     if (!reset) {
-      message.payload.unique_id = `${alarmId}_${entityName}_v10`
+      message.payload.unique_id = generateCleanUniqueId(zone.name, 'battery', zone.id)
     }
     return message
   }
@@ -303,8 +278,8 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
      * @returns
      */
   const configSensorConnectivity = function (zone, i) {
-    const cleanEntityBase = cleanZoneName(zone.name)      // "zone_15_pir_sala"
-    const entityName = `${cleanEntityBase}_connessione`   // "zone_15_pir_sala_connessione"  
+    const cleanName = cleanZoneName(zone.name)      // "finestra_ingresso"
+    const entityName = `${cleanName}_connessione`   // "finestra_ingresso_connessione"  
     
     logger.debug(`configSensorConnectivity: Zone ${zone.id}, entity name: "${entityName}"`)
     
@@ -312,7 +287,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       config.hadiscovery.topics.sensorConnectivityConfig, true, entityName)
     
     if (!reset) {
-      message.payload.unique_id = `${alarmId}_${entityName}_v10`
+      message.payload.unique_id = generateCleanUniqueId(zone.name, 'connectivity', zone.id)
     }
     return message
   }
@@ -324,8 +299,8 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
      * @returns
      */
   const configSensorAlarm = function (zone, i) {
-    const cleanEntityBase = cleanZoneName(zone.name)  // "zone_15_pir_sala"
-    const entityName = cleanEntityBase               // "zone_15_pir_sala" (no suffix for main)
+    const cleanName = cleanZoneName(zone.name)  // "finestra_ingresso"
+    const entityName = cleanName               // "finestra_ingresso" (no suffix for main)
     
     logger.debug(`configSensorAlarm: Zone ${zone.id}, entity name: "${entityName}"`)
     
@@ -333,7 +308,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       config.hadiscovery.topics.sensorAlarmConfig, false, entityName)
     
     if (!reset) {
-      message.payload.unique_id = `${alarmId}_${entityName}_v10`
+      message.payload.unique_id = generateCleanUniqueId(zone.name, 'alarm', zone.id)
     }
     return message
   }
@@ -464,8 +439,8 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         zoneId: zoneId
       })
 
-      const cleanEntityBase = cleanZoneName(zone.name)  // "zone_15_pir_sala"
-      const entityName = `${cleanEntityBase}_bypass`    // "zone_15_pir_sala_bypass"
+      const cleanName = cleanZoneName(zone.name)  // "finestra_ingresso"
+      const entityName = `${cleanName}_bypass`    // "finestra_ingresso_bypass"
       
       logger.debug(`configSwitchBypass: Zone ${zone.id}, entity name: "${entityName}"`)
       
@@ -479,7 +454,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         command_topic: _getTopic(config.topics.alarm.bypass, {
           zoneId: zoneId
         }),
-        unique_id: `${alarmId}_${entityName}_v10`,
+        unique_id: generateCleanUniqueId(zone.name, 'bypass', zone.id),
         icon: config.hadiscovery.bypass.icon,
         device: getZoneDevice(zone),
         qos: config.hadiscovery.sensors_qos
