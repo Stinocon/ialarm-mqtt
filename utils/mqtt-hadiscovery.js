@@ -98,8 +98,8 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
     return {
       ...deviceConfig,
       identifiers: [`${alarmId}_zone_${zone.id}`],
-      // Nome device pulito senza prefissi ridondanti
-      name: `${cleanedName}`,
+      // Add zone_X_ prefix to device name to avoid duplications
+      name: `zone_${zone.id}_${zone.name}`,
       model: zone.type || 'Binary Sensor'
     }
   }
@@ -155,8 +155,8 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
 
       const payload = {
         ...message.payload,
-        // Use specific entity name to avoid automatic suffixes
-        name: `${cleanedName} Stato`,
+        // Add zone_X_ prefix to entity name to avoid duplications
+        name: `zone_${zone.id}_${zone.name}`,
         unique_id: `${alarmId}_zone_${zone.id}_fault_v6`
       }
 
@@ -230,8 +230,8 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       })
 
       payload = {
-        // Use specific entity name to avoid automatic suffixes
-        name: entityName || cleanZoneName(zone.name),
+        // Add zone_X_ prefix to entity name to avoid duplications
+        name: `zone_${zone.id}_${zone.name}_${type.toLowerCase()}`,
         availability: getAvailability(),
         device_class: deviceClass,
         value_template: valueTemplate,
@@ -327,7 +327,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       })
 
       payload = {
-        name: cleanZoneName(zone.name) + ' ' + bypassName,
+        name: `zone_${zone.id}_${zone.name}_bypass`,
         availability: getAvailability(),
         state_topic: stateTopic,
         value_template: `{{ '${config.payloads.sensorOn}' if value_json.bypass else '${config.payloads.sensorOff}' }}`,
