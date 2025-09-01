@@ -13,15 +13,16 @@ const pjson = JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
 export default function (config, zonesToConfig, reset, deviceInfo) {
   const logger = MeianLogger(config.verbose ? 'debug' : 'info')
 
-  const alarmId = `alarm_mqtt_${(deviceInfo && deviceInfo.mac && deviceInfo.mac.split(':').join('')) || 'meian'}`
+  const uniqueSuffix = (config.branding && config.branding.uniqueIdSuffix) ? String(config.branding.uniqueIdSuffix) : ''
+  const alarmId = `alarm_mqtt_${(deviceInfo && deviceInfo.mac && deviceInfo.mac.split(':').join('')) || 'meian'}${uniqueSuffix}`
   logger.info(`Generated alarmId: ${alarmId}`)
 
   const deviceConfig = {
     identifiers: `${alarmId}`,
-    manufacturer: 'Meian',
+    manufacturer: (config.branding && config.branding.manufacturer) || 'Meian',
     model: deviceInfo.name,
     // Use a more specific device name to avoid entity name collisions with HA rules (entity name cannot equal or start with device name)
-    name: `${config.name || deviceInfo.name || 'iAlarm Security Panel'}`,
+    name: `${(config.name || deviceInfo.name || 'iAlarm Security Panel')}${(config.branding && config.branding.deviceNameSuffix) || ''}`,
     sw_version: `ialarm-mqtt ${pjson.version}`
   }
   /*
