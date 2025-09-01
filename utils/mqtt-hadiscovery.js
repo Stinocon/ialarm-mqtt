@@ -18,77 +18,87 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
   logger.info(`Generated alarmId: ${alarmId}`)
 
   /**
-   * Clean zone name for Entity IDs - KEEPS zone prefix, removes duplications
-   * @param {string} zoneName - The original zone name
-   * @returns {string} - Format: "zone_X_clean_name" 
+   * Clean zone name - PRESERVES zone_X_ prefix and removes duplications
+   * @param {string} zoneName - Original zone name like "zona_15_pir_sala_pir_sala"
+   * @returns {string} - Clean name like "zone_15_pir_sala"
    */
   function cleanZoneName(zoneName) {
+    logger.debug(`cleanZoneName INPUT: "${zoneName}"`)
+    
     if (!zoneName || typeof zoneName !== 'string') {
-      return 'zone_unknown'
+      logger.debug('cleanZoneName: Invalid input, returning zone_0_unknown')
+      return 'zone_0_unknown'
     }
     
     let cleaned = zoneName.toLowerCase().trim()
     if (cleaned === '') {
-      return 'zone_unknown'
+      logger.debug('cleanZoneName: Empty input, returning zone_0_unknown')
+      return 'zone_0_unknown'
     }
     
-    // Step 1: Extract and standardize prefix
-    let prefix = ''
-    let namepart = cleaned
+    // Step 1: Extract zone number and create standardized prefix
+    let zoneNumber = '0'
+    let nameWithoutPrefix = cleaned
     
-    // Match "zona_15_" or "zone_15_" patterns
-    const prefixMatch = cleaned.match(/^(zona?_?\d+_?)/i)
-    if (prefixMatch) {
-      const zoneNumber = cleaned.match(/\d+/)[0]  // Extract just the number
-      prefix = `zone_${zoneNumber}_`  // Standardize to "zone_X_"
-      namepart = cleaned.replace(/^zona?_?\d+_?/i, '')  // Remove original prefix
+    // Match patterns like "zona_15_" or "zone_15_"
+    const zoneMatch = cleaned.match(/^zona?_?(\d+)_?(.*)$/i)
+    if (zoneMatch) {
+      zoneNumber = zoneMatch[1]
+      nameWithoutPrefix = zoneMatch[2] || ''
+      logger.debug(`cleanZoneName: Found zone ${zoneNumber}, name part: "${nameWithoutPrefix}"`)
     } else {
-      // If no prefix found, assume it's zone 1
-      prefix = 'zone_1_'
+      // If no zone prefix found, try to extract from zone ID or default to zone 0
+      logger.debug(`cleanZoneName: No zone prefix found in "${cleaned}", using zone_0`)
     }
     
-    // Step 2: Handle duplications in namepart only
-    if (!namepart || namepart.trim() === '') {
-      return `${prefix}unknown`
+    const standardPrefix = `zone_${zoneNumber}_`
+    logger.debug(`cleanZoneName: Standard prefix: "${standardPrefix}"`)
+    
+    // Step 2: Clean the name part (remove duplications)
+    if (!nameWithoutPrefix || nameWithoutPrefix.trim() === '') {
+      const result = `${standardPrefix}unknown`
+      logger.debug(`cleanZoneName: Empty name part, result: "${result}"`)
+      return result
     }
     
-    const parts = namepart.split(/[_\s-]+/).filter(part => part.length > 0)
+    // Split name part into words
+    const parts = nameWithoutPrefix.split(/[_\s-]+/).filter(part => part.length > 0)
+    logger.debug(`cleanZoneName: Name parts: [${parts.join(', ')}]`)
     
-    // Remove complete duplication patterns like ["pir", "sala", "pir", "sala"] -> ["pir", "sala"] 
+    // Remove complete duplication patterns
+    let cleanedParts = parts
     const halfLength = Math.floor(parts.length / 2)
-    if (parts.length % 2 === 0 && halfLength > 0) {
+    
+    // Check for full duplication: ["pir", "sala", "pir", "sala"] -> ["pir", "sala"]
+    if (parts.length >= 2 && parts.length % 2 === 0 && halfLength > 0) {
       const firstHalf = parts.slice(0, halfLength)
       const secondHalf = parts.slice(halfLength)
-      if (firstHalf.every((part, index) => part === secondHalf[index])) {
-        const cleanedNamePart = firstHalf.join('_')
-        const result = `${prefix}${cleanedNamePart}`
-        logger.debug(`cleanZoneName: "${zoneName}" -> "${result}" (full duplication removed)`)
-        return result
+      
+      const isFullDuplication = firstHalf.every((part, index) => part === secondHalf[index])
+      if (isFullDuplication) {
+        cleanedParts = firstHalf
+        logger.debug(`cleanZoneName: Removed full duplication, new parts: [${cleanedParts.join(', ')}]`)
       }
     }
     
-    // Remove simple duplicates like ["camera", "camera"] -> ["camera"]
+    // Remove consecutive duplicates: ["camera", "camera", "sala"] -> ["camera", "sala"]
     const deduped = []
-    for (let i = 0; i < parts.length; i++) {
-      const currentPart = parts[i]
-      if (i === 0 || currentPart !== parts[i - 1]) {
+    for (let i = 0; i < cleanedParts.length; i++) {
+      const currentPart = cleanedParts[i]
+      if (i === 0 || currentPart !== cleanedParts[i - 1]) {
         deduped.push(currentPart)
       }
     }
     
-    let cleanedNamePart = deduped.join('_')
-    
-    // Final cleanup
-    cleanedNamePart = cleanedNamePart.replace(/[^a-z0-9_]/g, '_')
-    cleanedNamePart = cleanedNamePart.replace(/_{2,}/g, '_')
-    cleanedNamePart = cleanedNamePart.replace(/^_|_$/g, '')
-    
-    if (!cleanedNamePart) {
-      cleanedNamePart = 'unknown'
+    if (deduped.length !== cleanedParts.length) {
+      logger.debug(`cleanZoneName: Removed consecutive duplicates: [${deduped.join(', ')}]`)
     }
     
-    const result = `${prefix}${cleanedNamePart}`
-    logger.debug(`cleanZoneName: "${zoneName}" -> "${result}"`)
+    // Step 3: Build final result
+    const cleanedNamePart = deduped.join('_')
+    const result = `${standardPrefix}${cleanedNamePart}`
+    
+    logger.debug(`cleanZoneName: FINAL RESULT: "${zoneName}" -> "${result}"`)
     return result
   }
 
@@ -187,8 +197,8 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
     return {
       ...deviceConfig,
       identifiers: [`${alarmId}_zone_${zone.id}`],
-      // Use elegant name for device (no type suffix)
-      name: createElegantName(zone.name, 'alarm'),
+      // Use elegant name for device display  
+      name: createElegantName(zone.name, ''),  // "Finestra Sx Sala"
       model: zone.type || 'Binary Sensor'
     }
   }
@@ -225,10 +235,13 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
      * @returns
      */
   const configSensorFault = function (zone, i) {
-    const cleanEntityName = cleanZoneName(zone.name)  // zone_X_porta_studio
+    const cleanEntityBase = cleanZoneName(zone.name)  // "zone_15_pir_sala"
+    const entityName = `${cleanEntityBase}_stato`     // "zone_15_pir_sala_stato"
+    
+    logger.debug(`configSensorFault: Zone ${zone.id}, entity name: "${entityName}"`)
+    
     const message = configBinarySensors(zone, i, 'Motion', 'safety', 'fault', 
-      config.hadiscovery.topics.sensorConfig, false, 
-      createElegantName(zone.name, 'fault'))  // "Porta Studio Stato"
+      config.hadiscovery.topics.sensorConfig, false, entityName)
     
     if (!reset) {
       const zoneName = config.hadiscovery.zoneName
@@ -245,10 +258,10 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
 
       const payload = {
         ...message.payload,
-        // Use elegant name for display
-        name: createElegantName(zone.name, 'fault'),
-        // Override the unique_id to use clean entity name
-        unique_id: `${alarmId}_${cleanEntityName}_fault_v9`
+        // Use entity name directly
+        name: entityName,
+        // Override unique_id to match entity name
+        unique_id: `${alarmId}_${entityName}_v10`
       }
 
       // icon is not supported on binary sensor, only switches, light, sensor, etc
@@ -269,13 +282,16 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
      * @returns
      */
   const configSensorBattery = function (zone, i) {
-    const cleanEntityName = cleanZoneName(zone.name)  // zone_X_porta_studio
+    const cleanEntityBase = cleanZoneName(zone.name)  // "zone_15_pir_sala"  
+    const entityName = `${cleanEntityBase}_batteria`  // "zone_15_pir_sala_batteria"
+    
+    logger.debug(`configSensorBattery: Zone ${zone.id}, entity name: "${entityName}"`)
+    
     const message = configBinarySensors(zone, i, 'Battery', 'battery', 'lowbat', 
-      config.hadiscovery.topics.sensorBatteryConfig, false, 
-      createElegantName(zone.name, 'battery'))  // "Porta Studio Batteria"
+      config.hadiscovery.topics.sensorBatteryConfig, false, entityName)
     
     if (!reset) {
-      message.payload.unique_id = `${alarmId}_${cleanEntityName}_batteria_v9`
+      message.payload.unique_id = `${alarmId}_${entityName}_v10`
     }
     return message
   }
@@ -287,13 +303,16 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
      * @returns
      */
   const configSensorConnectivity = function (zone, i) {
-    const cleanEntityName = cleanZoneName(zone.name)  // zone_X_porta_studio
+    const cleanEntityBase = cleanZoneName(zone.name)      // "zone_15_pir_sala"
+    const entityName = `${cleanEntityBase}_connessione`   // "zone_15_pir_sala_connessione"  
+    
+    logger.debug(`configSensorConnectivity: Zone ${zone.id}, entity name: "${entityName}"`)
+    
     const message = configBinarySensors(zone, i, 'Connectivity', 'connectivity', 'wirelessLoss', 
-      config.hadiscovery.topics.sensorConnectivityConfig, true, 
-      createElegantName(zone.name, 'connectivity'))  // "Porta Studio Connessione"
+      config.hadiscovery.topics.sensorConnectivityConfig, true, entityName)
     
     if (!reset) {
-      message.payload.unique_id = `${alarmId}_${cleanEntityName}_connessione_v9`
+      message.payload.unique_id = `${alarmId}_${entityName}_v10`
     }
     return message
   }
@@ -305,13 +324,16 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
      * @returns
      */
   const configSensorAlarm = function (zone, i) {
-    const cleanEntityName = cleanZoneName(zone.name)  // zone_X_porta_studio  
+    const cleanEntityBase = cleanZoneName(zone.name)  // "zone_15_pir_sala"
+    const entityName = cleanEntityBase               // "zone_15_pir_sala" (no suffix for main)
+    
+    logger.debug(`configSensorAlarm: Zone ${zone.id}, entity name: "${entityName}"`)
+    
     const message = configBinarySensors(zone, i, 'Alarm', 'safety', 'alarm', 
-      config.hadiscovery.topics.sensorAlarmConfig, false, 
-      createElegantName(zone.name, 'alarm'))  // "Porta Studio"
+      config.hadiscovery.topics.sensorAlarmConfig, false, entityName)
     
     if (!reset) {
-      message.payload.unique_id = `${alarmId}_${cleanEntityName}_v9`
+      message.payload.unique_id = `${alarmId}_${entityName}_v10`
     }
     return message
   }
@@ -442,10 +464,13 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         zoneId: zoneId
       })
 
-      const cleanEntityName = cleanZoneName(zone.name)  // zone_X_porta_studio
+      const cleanEntityBase = cleanZoneName(zone.name)  // "zone_15_pir_sala"
+      const entityName = `${cleanEntityBase}_bypass`    // "zone_15_pir_sala_bypass"
+      
+      logger.debug(`configSwitchBypass: Zone ${zone.id}, entity name: "${entityName}"`)
       
       payload = {
-        name: createElegantName(zone.name, 'bypass'),  // "Porta Studio Bypass"
+        name: entityName,  // Use entity name directly
         availability: getAvailability(),
         state_topic: stateTopic,
         value_template: `{{ '${config.payloads.sensorOn}' if value_json.bypass else '${config.payloads.sensorOff}' }}`,
@@ -454,7 +479,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         command_topic: _getTopic(config.topics.alarm.bypass, {
           zoneId: zoneId
         }),
-        unique_id: `${alarmId}_${cleanEntityName}_bypass_v9`,  // alarm_mqtt_xxx_zone_8_porta_studio_bypass_v9
+        unique_id: `${alarmId}_${entityName}_v10`,
         icon: config.hadiscovery.bypass.icon,
         device: getZoneDevice(zone),
         qos: config.hadiscovery.sensors_qos
