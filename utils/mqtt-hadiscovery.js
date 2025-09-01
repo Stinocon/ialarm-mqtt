@@ -23,6 +23,11 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
    * @returns {string} - Cleaned zone name without duplications
    */
   function cleanZoneName (zoneName) {
+    // Handle undefined/null zoneName
+    if (!zoneName || typeof zoneName !== 'string') {
+      return 'unknown'
+    }
+    
     // Step 1: Remove zona_X_ prefix if present
     let cleaned = zoneName.replace(/^zona_\d+_/, '')
     
