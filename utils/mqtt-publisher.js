@@ -497,8 +497,14 @@ export const MqttPublisher = function (config) {
     logger.info('About to instantiate IAlarmHaDiscovery...')
     const discoveryInstance = new IAlarmHaDiscovery(config, zones, true, deviceInfo)
     logger.info('IAlarmHaDiscovery instantiated, calling createMessages...')
-    const resetMessages = discoveryInstance.createMessages()
-    logger.info(`Publishing HA discovery reset for ${resetMessages.length} topics`)
+    try {
+      const resetMessages = discoveryInstance.createMessages()
+      logger.info(`Publishing HA discovery reset for ${resetMessages.length} topics`)
+    } catch (error) {
+      logger.error(`ERROR in createMessages(): ${error.message}`)
+      logger.error(`ERROR stack: ${error.stack}`)
+      return
+    }
     for (let index = 0; index < resetMessages.length; index++) {
       const m = resetMessages[index]
       logger.debug && logger.debug(`Discovery RESET topic: ${m.topic}`)
@@ -521,8 +527,14 @@ export const MqttPublisher = function (config) {
       logger.info('About to instantiate IAlarmHaDiscovery for discovery messages...')
       const discoveryInstance2 = new IAlarmHaDiscovery(config, zones, false, deviceInfo)
       logger.info('IAlarmHaDiscovery instantiated for discovery, calling createMessages...')
-      const discoveryMessages = discoveryInstance2.createMessages()
-      logger.info(`Publishing HA discovery entities for ${discoveryMessages.length} topics`)
+      try {
+        const discoveryMessages = discoveryInstance2.createMessages()
+        logger.info(`Publishing HA discovery entities for ${discoveryMessages.length} topics`)
+      } catch (error) {
+        logger.error(`ERROR in discovery createMessages(): ${error.message}`)
+        logger.error(`ERROR stack: ${error.stack}`)
+        return
+      }
       for (let index = 0; index < discoveryMessages.length; index++) {
         const m = discoveryMessages[index]
         logger.debug && logger.debug(`Discovery topic: ${m.topic}`)
