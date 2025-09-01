@@ -494,7 +494,10 @@ export const MqttPublisher = function (config) {
 
     // First pass: publish reset cleanup only if discovery is requested OR if HA discovery is enabled
     logger.info(`Creating reset messages with config.branding.prefix=${config.branding?.prefix}, zones=${zones.length}`)
-    const resetMessages = new IAlarmHaDiscovery(config, zones, true, deviceInfo).createMessages()
+    logger.info('About to instantiate IAlarmHaDiscovery...')
+    const discoveryInstance = new IAlarmHaDiscovery(config, zones, true, deviceInfo)
+    logger.info('IAlarmHaDiscovery instantiated, calling createMessages...')
+    const resetMessages = discoveryInstance.createMessages()
     logger.info(`Publishing HA discovery reset for ${resetMessages.length} topics`)
     for (let index = 0; index < resetMessages.length; index++) {
       const m = resetMessages[index]
@@ -515,7 +518,10 @@ export const MqttPublisher = function (config) {
     // Second pass: actual discovery publish, delayed to ensure HA processed cleanup
     setTimeout(function () {
       logger.info(`Creating discovery messages with config.branding.prefix=${config.branding?.prefix}, zones=${zones.length}`)
-      const discoveryMessages = new IAlarmHaDiscovery(config, zones, false, deviceInfo).createMessages()
+      logger.info('About to instantiate IAlarmHaDiscovery for discovery messages...')
+      const discoveryInstance2 = new IAlarmHaDiscovery(config, zones, false, deviceInfo)
+      logger.info('IAlarmHaDiscovery instantiated for discovery, calling createMessages...')
+      const discoveryMessages = discoveryInstance2.createMessages()
       logger.info(`Publishing HA discovery entities for ${discoveryMessages.length} topics`)
       for (let index = 0; index < discoveryMessages.length; index++) {
         const m = discoveryMessages[index]
