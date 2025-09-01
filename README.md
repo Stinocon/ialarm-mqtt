@@ -1,4 +1,4 @@
-# ialarm-mqtt (Stinocon Enhanced Version)
+# iAlarm to MQTT bridge
 
 🚀 **Enhanced MQTT bridge for iAlarm with critical bug fixes and coexistence support.**
 
