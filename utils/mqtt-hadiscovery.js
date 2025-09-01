@@ -75,7 +75,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
      * @returns
      */
   const configSensorFault = function (zone, i) {
-    const message = configBinarySensors(zone, i, 'Motion', 'safety', 'fault', config.hadiscovery.topics.sensorConfig, false)
+    const message = configBinarySensors(zone, i, 'Motion', 'safety', 'fault', config.hadiscovery.topics.sensorConfig, false, `${zone.name} Stato`)
 
     if (!reset) {
       const zoneName = config.hadiscovery.zoneName
@@ -92,8 +92,8 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
 
       const payload = {
         ...message.payload,
-        // Clean entity name without redundancy
-        name: zone.name,
+        // Use specific entity name to avoid automatic suffixes
+        name: `${zone.name} Stato`,
         unique_id: `${alarmId}_zone_${zone.id}`
       }
 
@@ -115,7 +115,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
      * @returns
      */
   const configSensorBattery = function (zone, i) {
-    return configBinarySensors(zone, i, 'Battery', 'battery', 'lowbat', config.hadiscovery.topics.sensorBatteryConfig, false)
+    return configBinarySensors(zone, i, 'Battery', 'battery', 'lowbat', config.hadiscovery.topics.sensorBatteryConfig, false, `${zone.name} Batteria`)
   }
 
   /**
@@ -125,7 +125,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
      * @returns
      */
   const configSensorConnectivity = function (zone, i) {
-    return configBinarySensors(zone, i, 'Connectivity', 'connectivity', 'wirelessLoss', config.hadiscovery.topics.sensorConnectivityConfig, true)
+    return configBinarySensors(zone, i, 'Connectivity', 'connectivity', 'wirelessLoss', config.hadiscovery.topics.sensorConnectivityConfig, true, `${zone.name} Connessione`)
   }
 
   /**
@@ -135,7 +135,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
      * @returns
      */
   const configSensorAlarm = function (zone, i) {
-    return configBinarySensors(zone, i, 'Alarm', 'safety', 'alarm', config.hadiscovery.topics.sensorAlarmConfig, false)
+    return configBinarySensors(zone, i, 'Alarm', 'safety', 'alarm', config.hadiscovery.topics.sensorAlarmConfig, false, zone.name)
   }
 
   /**
@@ -149,7 +149,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
      * @param {*} defaultOn
      * @returns
      */
-  const configBinarySensors = function (zone, index, type, deviceClass, statusProperty, topic, defaultOn) {
+  const configBinarySensors = function (zone, index, type, deviceClass, statusProperty, topic, defaultOn, entityName) {
     let payload = ''
     const zoneId = zone.id
     if (!reset) {
@@ -167,8 +167,8 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       })
 
       payload = {
-        // Clean entity name without redundancy
-        name: zone.name,
+        // Use specific entity name to avoid automatic suffixes
+        name: entityName || zone.name,
         availability: getAvailability(),
         device_class: deviceClass,
         value_template: valueTemplate,
