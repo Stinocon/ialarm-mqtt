@@ -98,8 +98,8 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
     return {
       ...deviceConfig,
       identifiers: [`${alarmId}_zone_${zone.id}`],
-      // Add zone_X_ prefix to device name to avoid duplications
-      name: `zone_${zone.id}_${zone.name}`,
+      // Use cleaned name to avoid duplications
+      name: `zone_${zone.id}_${cleanedName}`,
       model: zone.type || 'Binary Sensor'
     }
   }
@@ -155,9 +155,9 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
 
       const payload = {
         ...message.payload,
-        // Add zone_X_ prefix to entity name to avoid duplications
-        name: `zone_${zone.id}_${zone.name}`,
-        unique_id: `${alarmId}_zone_${zone.id}_fault_v6`
+        // Use cleaned name to avoid duplications
+        name: `zone_${zone.id}_${cleanedName}`,
+        unique_id: `${alarmId}_zone_${zone.id}_fault`
       }
 
       // icon is not supported on binary sensor, only switches, light, sensor, etc
@@ -229,9 +229,10 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         zoneId: zoneId
       })
 
+      const cleanedName = cleanZoneName(zone.name)
       payload = {
-        // Add zone_X_ prefix to entity name to avoid duplications
-        name: `zone_${zone.id}_${zone.name}_${type.toLowerCase()}`,
+        // Use cleaned name to avoid duplications
+        name: `zone_${zone.id}_${cleanedName}_${type.toLowerCase()}`,
         availability: getAvailability(),
         device_class: deviceClass,
         value_template: valueTemplate,
@@ -240,7 +241,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         json_attributes_topic: stateTopic,
         json_attributes_template: '{{ value_json | tojson }}',
         state_topic: stateTopic,
-        unique_id: `${alarmId}_zone_${zone.id}_${type.toLowerCase()}_v6`,
+        unique_id: `${alarmId}_zone_${zone.id}_${type.toLowerCase()}`,
         device: getZoneDevice(zone),
         qos: config.hadiscovery.sensors_qos
       }
@@ -270,7 +271,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         value_template: '{{value_json.description}}',
         json_attributes_topic: config.topics.alarm.event,
         json_attributes_template: '{{ value_json | tojson }}',
-        unique_id: `${alarmId}_events_v6`,
+        unique_id: `${alarmId}_events`,
         icon: config.hadiscovery.events.icon,
         device: deviceConfig,
         qos: config.hadiscovery.sensors_qos
@@ -298,7 +299,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         payload_off: false,
         json_attributes_topic: config.topics.alarm.configStatus,
         json_attributes_template: '{{ value_json.connectionStatus | tojson }}',
-        unique_id: `${alarmId}_connection_status_v6`,
+        unique_id: `${alarmId}_connection_status`,
         icon: 'mdi:alert-circle',
         device: deviceConfig,
         qos: config.hadiscovery.sensors_qos
@@ -326,8 +327,9 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         zoneId: zoneId
       })
 
+      const cleanedName = cleanZoneName(zone.name)
       payload = {
-        name: `zone_${zone.id}_${zone.name}_bypass`,
+        name: `zone_${zone.id}_${cleanedName}_bypass`,
         availability: getAvailability(),
         state_topic: stateTopic,
         value_template: `{{ '${config.payloads.sensorOn}' if value_json.bypass else '${config.payloads.sensorOff}' }}`,
@@ -336,7 +338,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         command_topic: _getTopic(config.topics.alarm.bypass, {
           zoneId: zoneId
         }),
-        unique_id: `${alarmId}_zone_${zone.id}_bypass_v6`,
+        unique_id: `${alarmId}_zone_${zone.id}_bypass`,
         icon: config.hadiscovery.bypass.icon,
         device: getZoneDevice(zone),
         qos: config.hadiscovery.sensors_qos
@@ -368,7 +370,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         command_topic: config.topics.alarm.resetCache,
         payload_on: 'ON',
         payload_off: 'OFF',
-        unique_id: `${alarmId}_clear_cache_v6`,
+        unique_id: `${alarmId}_clear_cache`,
         icon: 'mdi:reload-alert',
         device: deviceConfig,
         qos: config.hadiscovery.sensors_qos
@@ -398,7 +400,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         command_topic: config.topics.alarm.discovery,
         payload_on: 'ON',
         payload_off: 'OFF',
-        unique_id: `${alarmId}_clear_discovery_v6`,
+        unique_id: `${alarmId}_clear_discovery`,
         icon: 'mdi:refresh',
         device: deviceConfig,
         qos: config.hadiscovery.sensors_qos
@@ -432,7 +434,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         command_topic: commandTopic,
         payload_on: 'cancel',
         payload_off: 'OFF',
-        unique_id: `${alarmId}_cancel_trigger_v6`,
+        unique_id: `${alarmId}_cancel_trigger`,
         icon: 'mdi:alarm-light',
         device: deviceConfig,
         qos: config.hadiscovery.sensors_qos
@@ -453,7 +455,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       payload = {
         // Keep a friendly alarm name but avoid generic device name repetition in entities
         name: `${deviceConfig.name}${config.server.areas > 1 ? ' Area ' + areaId : ''}`,
-        unique_id: `${alarmId}_unit${config.server.areas > 1 ? '_area' + areaId : ''}_v6`,
+        unique_id: `${alarmId}_unit${config.server.areas > 1 ? '_area' + areaId : ''}`,
         device: deviceConfig,
         availability: getAvailability(),
         state_topic: config.topics.alarm.state,
