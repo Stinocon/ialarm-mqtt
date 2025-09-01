@@ -88,6 +88,17 @@ If HA had previously nulled names due to violations, new compliant names will be
 - **Original Repository:** https://github.com/maxill1/ialarm-mqtt
 
 ## Changelog (highlights)
+- **0.14.2** (Enhanced)
+  - fix: correct branding defaults in addon configuration for proper coexistence
+  - fix: prefix: "ialarm-v2" (vs "ialarm" in original)
+  - fix: uniqueIdSuffix: "_ialarmv2" (vs "" in original)
+  - fix: deviceNameSuffix: " (Enhanced)" (vs "" in original)
+  - fix: manufacturer: "Antifurto365" (vs "Meian" in original)
+- **0.14.1** (Enhanced)
+  - fix: implement robust cleanZoneName() function to eliminate all duplication patterns
+  - fix: handle patterns like 'pir_corridoio_pir_corridoio' -> 'pir_corridoio'
+  - fix: force entity regeneration with unique_id version bump to v5
+  - feat: clean, professional entity names without redundancy
 - **0.12.6** (Enhanced)
   - fix: eliminate automatic _2, _3, _4 suffixes from Home Assistant entity names
   - feat: specific entity names for each zone sensor type (Stato, Batteria, Connessione)
