@@ -31,9 +31,6 @@ branding:
 
 **Result:** Topics use `ialarm-v2/*` instead of `ialarm/*`, devices show as "iAlarm Security Panel (Stinocon)", and all entities have unique identifiers.
 
-<a href="https://www.buymeacoffee.com/maxill1" target="_blank">
-<img src="https://www.buymeacoffee.com/assets/img/guidelines/download-assets-sm-2.svg" alt="Buy Me A Coffee"></a>
-
 ## Features
 - arm home
 - arm away
