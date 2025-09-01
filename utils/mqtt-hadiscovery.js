@@ -467,6 +467,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
 
   this.createMessages = function () {
     const messages = []
+    const zones = zonesToConfig // Fix: assign zonesToConfig to zones variable
     logger.info(`IAlarmHaDiscovery.createMessages called: reset=${reset}, zones=${zones.length}`)
 
     // cleanup old topics structures
