@@ -460,8 +460,8 @@ export const MqttPublisher = function (config) {
   this.publishHomeAssistantMqttDiscovery = function (zones, on, deviceInfo) {
     const now = Date.now()
     logger.info(`Discovery called: on=${on}, zones=${zones ? zones.length : 0}, discoveryInProgress=${discoveryInProgress}`)
+    
     if (discoveryInProgress) {
-      // Check if discovery has been stuck for too long (more than 60 seconds)
       const timeSinceStart = now - (lastDiscoveryCompletedAt || 0)
       if (timeSinceStart > 60000) {
         logger.warn(`Discovery stuck for ${timeSinceStart}ms, forcing reset...`)
@@ -472,8 +472,15 @@ export const MqttPublisher = function (config) {
         return
       }
     }
+    
     if (now - lastDiscoveryCompletedAt < DISCOVERY_COOLDOWN_MS) {
       logger.info(`Discovery cooldown active (${DISCOVERY_COOLDOWN_MS}ms). Skipping.`)
+      return
+    }
+
+    // ✅ FIX: Validazione input
+    if (!zones || zones.length === 0) {
+      logger.error('Discovery called with empty zones array, skipping...')
       return
     }
 
@@ -481,68 +488,79 @@ export const MqttPublisher = function (config) {
     discoveryStartTime = Date.now()
     logger.info(`Starting discovery process at ${new Date(discoveryStartTime).toISOString()}`)
     
-    // Safety timeout to reset discovery flag if it gets stuck
     const safetyTimeout = setTimeout(() => {
       if (discoveryInProgress) {
         logger.warn('Discovery safety timeout reached, resetting discovery flag')
         discoveryInProgress = false
         lastDiscoveryCompletedAt = Date.now()
       }
-    }, 30000) // 30 seconds safety timeout
+    }, 30000)
     
-    logger.info('Discovery process started, about to create reset messages...')
-
-    // First pass: publish reset cleanup only if discovery is requested OR if HA discovery is enabled
-    logger.info(`Creating reset messages with config.branding.prefix=${config.branding?.prefix}, zones=${zones.length}`)
-    logger.info('About to instantiate IAlarmHaDiscovery...')
-    const discoveryInstance = new IAlarmHaDiscovery(config, zones, true, deviceInfo)
-    logger.info('IAlarmHaDiscovery instantiated, calling createMessages...')
+    let resetMessages = []
+    let discoveryMessages = []
+    
+    // ✅ FIX: Genera tutti i messaggi prima di pubblicare
     try {
-      const resetMessages = discoveryInstance.createMessages()
-      logger.info(`Publishing HA discovery reset for ${resetMessages.length} topics`)
+      logger.info('Creating reset messages...')
+      const discoveryInstanceReset = new IAlarmHaDiscovery(config, zones, true, deviceInfo)
+      resetMessages = discoveryInstanceReset.createMessages()
+      logger.info(`Created ${resetMessages.length} reset messages`)
+      
+      if (on) {
+        logger.info('Creating discovery messages...')
+        const discoveryInstanceMain = new IAlarmHaDiscovery(config, zones, false, deviceInfo)
+        discoveryMessages = discoveryInstanceMain.createMessages()
+        logger.info(`Created ${discoveryMessages.length} discovery messages`)
+      }
     } catch (error) {
       logger.error(`ERROR in createMessages(): ${error.message}`)
       logger.error(`ERROR stack: ${error.stack}`)
+      logger.warn('Discovery encountered errors but will continue with available messages')
+      clearTimeout(safetyTimeout)
+      discoveryInProgress = false
+      lastDiscoveryCompletedAt = Date.now()
       return
     }
+
+    // Fase 1: Pubblica reset messages
+    logger.info(`Publishing HA discovery reset for ${resetMessages.length} topics`)
     for (let index = 0; index < resetMessages.length; index++) {
       const m = resetMessages[index]
-      logger.debug && logger.debug(`Discovery RESET topic: ${m.topic}`)
-      _publishAndLog(m.topic, m.payload, { retain: true })
+      if (m && m.topic) {
+        logger.debug && logger.debug(`Discovery RESET topic: ${m.topic}`)
+        _publishAndLog(m.topic, m.payload, { retain: true })
+      } else {
+        logger.warn(`Invalid reset message at index ${index}:`, m)
+      }
     }
 
     if (!on) {
-      // Only reset requested
       logger.info('HA discovery reset requested with discovery disabled. Skipping entity publish.')
-      clearTimeout(safetyTimeout) // Clear timeout on early exit
+      clearTimeout(safetyTimeout)
       discoveryInProgress = false
       lastDiscoveryCompletedAt = Date.now()
       return
     }
 
+    // Fase 2: Pubblica discovery messages dopo delay
     logger.info('Setting up Home Assistant discovery...')
-    // Second pass: actual discovery publish, delayed to ensure HA processed cleanup
     setTimeout(function () {
-      logger.info(`Creating discovery messages with config.branding.prefix=${config.branding?.prefix}, zones=${zones.length}`)
-      logger.info('About to instantiate IAlarmHaDiscovery for discovery messages...')
-      const discoveryInstance2 = new IAlarmHaDiscovery(config, zones, false, deviceInfo)
-      logger.info('IAlarmHaDiscovery instantiated for discovery, calling createMessages...')
-      try {
-        const discoveryMessages = discoveryInstance2.createMessages()
-        logger.info(`Publishing HA discovery entities for ${discoveryMessages.length} topics`)
-      } catch (error) {
-        logger.error(`ERROR in discovery createMessages(): ${error.message}`)
-        logger.error(`ERROR stack: ${error.stack}`)
-        return
-      }
+      logger.info(`Publishing HA discovery entities for ${discoveryMessages.length} topics`)
+      
       for (let index = 0; index < discoveryMessages.length; index++) {
         const m = discoveryMessages[index]
-        logger.debug && logger.debug(`Discovery topic: ${m.topic}`)
-        _publishAndLog(m.topic, m.payload, { retain: true })
+        if (m && m.topic) {
+          logger.debug && logger.debug(`Discovery topic: ${m.topic}`)
+          _publishAndLog(m.topic, m.payload, { retain: true })
+        } else {
+          logger.warn(`Invalid discovery message at index ${index}:`, m)
+        }
       }
-      clearTimeout(safetyTimeout) // Clear timeout on normal completion
+      
+      clearTimeout(safetyTimeout)
       discoveryInProgress = false
       lastDiscoveryCompletedAt = Date.now()
+      logger.info(`Discovery process completed successfully!`)
     }, 5000)
   }
 

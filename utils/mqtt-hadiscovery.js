@@ -23,13 +23,30 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
    * @returns {string} - Cleaned zone name without duplications
    */
   function cleanZoneName (zoneName) {
-    // Handle undefined/null zoneName
-    if (!zoneName || typeof zoneName !== 'string') {
+    // ✅ FIX: Gestione robust dei null/undefined
+    if (zoneName === null || zoneName === undefined) {
+      return 'unknown'
+    }
+    
+    if (typeof zoneName !== 'string') {
+      try {
+        zoneName = String(zoneName)
+      } catch (e) {
+        logger.warn(`Cannot convert zone name to string: ${zoneName}, using 'unknown'`)
+        return 'unknown'
+      }
+    }
+    
+    if (zoneName.trim() === '') {
       return 'unknown'
     }
     
     // Step 1: Remove zona_X_ prefix if present
     let cleaned = zoneName.replace(/^zona_\d+_/, '')
+    
+    if (!cleaned || cleaned.trim() === '') {
+      cleaned = zoneName
+    }
     
     // Step 2: Handle various duplication patterns
     const parts = cleaned.split('_')
@@ -486,27 +503,47 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
 
     //iterating all 128 zones
     const maxZones = configHandler.getMaxZones()
-    logger.info(`Starting zone iteration: maxZones=${maxZones}, zones.length=${zones.length}`)
+    const zonesArray = Array.isArray(zones) ? zones : []
+    
+    logger.info(`Starting zone iteration: maxZones=${maxZones}, zones.length=${zonesArray.length}`)
+    
     for (let i = 0; i < maxZones; i++) {
       if (i % 10 === 0) {
         logger.info(`Processing zone ${i}/${maxZones}...`)
       }
+      
       let zone
-      if (reset) {
-        zone = { id: i + 1 }
-      } else {
-        zone = zonesToConfig[i]
-        // zone not found
-        if (!zone) {
-          logger.log('error', `HA discovery config: ignoring zone ${i} (GetZone did not return any info on this zone or it is filtered out via server.zones in config)`)
+      
+      try {
+        if (reset) {
+          zone = { id: i + 1, name: `Zone_${i + 1}` }
+        } else {
+          zone = zonesArray[i]
+          
+          if (!zone) {
+            logger.debug(`HA discovery config: ignoring zone ${i} (GetZone did not return any info on this zone)`)
+            continue
+          }
+          
+          if (typeof zone.id === 'undefined') {
+            zone.id = i + 1
+          }
+          
+          if (typeof zone.name === 'undefined' || zone.name === null) {
+            logger.warn(`Zone ${zone.id} has no name, using default`)
+            zone.name = `Zone_${zone.id}`
+          }
+          
+          if (zone.typeId === 0) {
+            logger.debug(`HA discovery config: ignoring unused zone ${zone.id} (typeId = 0)`)
+            continue
+          }
+        }
+
+        if (!zone || !zone.id) {
+          logger.warn(`Invalid zone at index ${i}, skipping`)
           continue
         }
-        // disabled/not in use zone
-        if (zone.typeId === 0) {
-          logger.log('debug', `HA discovery config: ignoring unused zone ${zone.id} (it's configured as disabled on the alarm - typeId = 0)`)
-          continue
-        }
-      }
 
       // cleanup old topics structures
       if (reset) {
@@ -526,6 +563,11 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       // bypass switches
       if (reset || configHandler.isFeatureEnabled(config, 'bypass')) {
         messages.push(configSwitchBypass(zone, i))
+      }
+      
+      } catch (error) {
+        logger.error(`Error processing zone ${i}: ${error.message}`)
+        continue // ✅ FIX: Continua con la prossima zona invece di fallire tutto
       }
     }
 
@@ -551,7 +593,15 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       messages.push(configSensorEvents())
     }
 
-    logger.info(`IAlarmHaDiscovery.createMessages completed: created ${messages.length} messages`)
-    return messages
+    // ✅ FIX: Filtra messaggi null/undefined
+    const validMessages = messages.filter(msg => msg && msg.topic)
+
+    logger.info(`IAlarmHaDiscovery.createMessages completed: created ${validMessages.length} valid messages out of ${messages.length} total`)
+
+    if (validMessages.length !== messages.length) {
+      logger.warn(`Filtered out ${messages.length - validMessages.length} invalid messages`)
+    }
+
+    return validMessages
   }
 }
