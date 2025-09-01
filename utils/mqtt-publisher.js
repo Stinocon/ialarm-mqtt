@@ -489,8 +489,11 @@ export const MqttPublisher = function (config) {
         lastDiscoveryCompletedAt = Date.now()
       }
     }, 30000) // 30 seconds safety timeout
+    
+    logger.info('Discovery process started, about to create reset messages...')
 
     // First pass: publish reset cleanup only if discovery is requested OR if HA discovery is enabled
+    logger.info(`Creating reset messages with config.branding.prefix=${config.branding?.prefix}, zones=${zones.length}`)
     const resetMessages = new IAlarmHaDiscovery(config, zones, true, deviceInfo).createMessages()
     logger.info(`Publishing HA discovery reset for ${resetMessages.length} topics`)
     for (let index = 0; index < resetMessages.length; index++) {
@@ -511,6 +514,7 @@ export const MqttPublisher = function (config) {
     logger.info('Setting up Home Assistant discovery...')
     // Second pass: actual discovery publish, delayed to ensure HA processed cleanup
     setTimeout(function () {
+      logger.info(`Creating discovery messages with config.branding.prefix=${config.branding?.prefix}, zones=${zones.length}`)
       const discoveryMessages = new IAlarmHaDiscovery(config, zones, false, deviceInfo).createMessages()
       logger.info(`Publishing HA discovery entities for ${discoveryMessages.length} topics`)
       for (let index = 0; index < discoveryMessages.length; index++) {
