@@ -461,6 +461,12 @@ export const MqttPublisher = function (config) {
     const now = Date.now()
     logger.info(`Discovery called: on=${on}, zones=${zones ? zones.length : 0}, discoveryInProgress=${discoveryInProgress}`)
     
+    // 🚨 EMERGENCY DEBUG LOGGING
+    logger.info(`=== DISCOVERY DEBUG ===`)
+    logger.info(`Zones: ${JSON.stringify(zones ? zones.map(z => ({id: z.id, name: z.name, typeId: z.typeId})) : 'null')}`)
+    logger.info(`Config HA discovery enabled: ${config.hadiscovery?.enabled}`)
+    logger.info(`=======================`)
+    
     if (discoveryInProgress) {
       const timeSinceStart = now - (lastDiscoveryCompletedAt || 0)
       if (timeSinceStart > 60000) {
