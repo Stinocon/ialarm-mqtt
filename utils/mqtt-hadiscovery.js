@@ -380,12 +380,15 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
     const zoneId = zone.id
     if (!reset) {
       const cleanName = cleanZoneName(zone.name)
+      const cleanBase = cleanName.replace(/[^a-z0-9_]/g, '')
       const displayName = `${getDisplayName(cleanName, 'alarm')} ID Zona`
       const stateTopic = _getTopic(config.topics.sensors.zone.state, {
         zoneId: zoneId
       })
       payload = {
         name: displayName,
+        // Clean default entity_id (HA strips the device-name prefix from the friendly name itself)
+        default_entity_id: `sensor.${cleanBase}_ialarm_id_zona`,
         availability: getAvailability(),
         state_topic: stateTopic,
         value_template: '{{ value_json.id }}',
@@ -527,6 +530,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
     if (!reset) {
       payload = {
         name: `${deviceConfig.name} zone directory`,
+        default_entity_id: 'sensor.ialarm_zone_directory',
         availability: getAvailability(),
         state_topic: config.topics.zonesDirectory,
         value_template: '{{ value_json.count }}',
