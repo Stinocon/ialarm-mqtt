@@ -370,6 +370,43 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
   }
 
   /**
+     * Diagnostic sensor exposing the zone id (e.g. "6") so the panel zone number
+     * can be mapped to a room in HA. Reuses the existing per-zone state topic.
+     * @param {*} zone
+     * @returns
+     */
+  const configSensorZoneId = function (zone) {
+    let payload = ''
+    const zoneId = zone.id
+    if (!reset) {
+      const cleanName = cleanZoneName(zone.name)
+      const displayName = `${getDisplayName(cleanName, 'alarm')} ID Zona`
+      const stateTopic = _getTopic(config.topics.sensors.zone.state, {
+        zoneId: zoneId
+      })
+      payload = {
+        name: displayName,
+        availability: getAvailability(),
+        state_topic: stateTopic,
+        value_template: '{{ value_json.id }}',
+        json_attributes_topic: stateTopic,
+        json_attributes_template: '{{ value_json | tojson }}',
+        unique_id: generateCleanUniqueId(zone.name, 'zoneid', zone.id),
+        entity_category: 'diagnostic',
+        icon: 'mdi:identifier',
+        device: getZoneDevice(zone),
+        qos: config.hadiscovery.sensors_qos
+      }
+    }
+    return {
+      topic: _getTopic(config.hadiscovery.topics.sensorZoneIdConfig, {
+        zoneId: zoneId
+      }),
+      payload
+    }
+  }
+
+  /**
      * Binary sensors based on alarm booleans
      * @param {*} zone
      * @param {*} i
@@ -475,6 +512,35 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
     }
     return {
       topic: _getTopic(config.hadiscovery.topics.connectionConfig),
+      payload
+    }
+  }
+
+  /**
+     * Diagnostic sensor on the main alarm device exposing the full zone id->name
+     * directory in its attributes (state = number of zones). Useful for automations
+     * that need to translate a panel zone number into a room name.
+     * @returns
+     */
+  const configSensorZoneDirectory = function () {
+    let payload = ''
+    if (!reset) {
+      payload = {
+        name: `${deviceConfig.name} zone directory`,
+        availability: getAvailability(),
+        state_topic: config.topics.zonesDirectory,
+        value_template: '{{ value_json.count }}',
+        json_attributes_topic: config.topics.zonesDirectory,
+        json_attributes_template: '{{ value_json.zones | tojson }}',
+        unique_id: `${alarmId}_zone_directory`,
+        entity_category: 'diagnostic',
+        icon: 'mdi:format-list-numbered',
+        device: deviceConfig,
+        qos: config.hadiscovery.sensors_qos
+      }
+    }
+    return {
+      topic: _getTopic(config.hadiscovery.topics.zoneDirectoryConfig),
       payload
     }
   }
@@ -744,7 +810,12 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
       if (reset || configHandler.isFeatureEnabled(config, 'bypass')) {
         messages.push(configSwitchBypass(zone, i))
       }
-      
+
+      // diagnostic zone id sensor (panel zone number -> room mapping)
+      if (reset || configHandler.isFeatureEnabled(config, 'zoneId')) {
+        messages.push(configSensorZoneId(zone))
+      }
+
       } catch (error) {
         logger.error(`Error processing zone ${i}: ${error.message}`)
         continue // ✅ FIX: Continua con la prossima zona invece di fallire tutto
@@ -771,6 +842,11 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
     // last event
     if (reset || configHandler.isFeatureEnabled(config, 'events')) {
       messages.push(configSensorEvents())
+    }
+
+    // global zone directory (id -> name map)
+    if (reset || configHandler.isFeatureEnabled(config, 'zoneId')) {
+      messages.push(configSensorZoneDirectory())
     }
 
     // ✅ FIX: Filtra messaggi null/undefined

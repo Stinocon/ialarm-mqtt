@@ -385,6 +385,27 @@ export const MqttPublisher = function (config) {
   }
 
   /**
+   * publish the zone id -> name directory (retained) so HA can map a panel zone
+   * number to a room. Built from the named zones cache (not the live sensor labels).
+   * @param {*} zones
+   */
+  this.publishZoneDirectory = function (zones) {
+    if (!zones || !config.topics.zonesDirectory) {
+      return
+    }
+    const map = {}
+    zones.forEach(zone => {
+      if (zone && (zone.id || zone.id === 0)) {
+        map[zone.id] = zone.name
+      }
+    })
+    _publishAndLog(config.topics.zonesDirectory, {
+      count: Object.keys(map).length,
+      zones: map
+    })
+  }
+
+  /**
    * publish single sensor state using cache and updating only changed properties (example: push notification)
    * @param {*} zoneId
    * @param {*} changed

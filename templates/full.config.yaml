@@ -54,6 +54,7 @@ server:
     - events
     - bypass
     - zoneNames
+    - zoneId
 mqtt:
   host: 192.168.1.82
   port: "1883"
@@ -83,6 +84,7 @@ topics:
       active: ialarm/sensors/zone_${zoneId}/wirelessLoss
       lowBattery: ialarm/sensors/zone_${zoneId}/lowbat
       fault: ialarm/sensors/zone_${zoneId}/fault
+  zonesDirectory: ialarm/zones/directory
 payloads:
   alarmAvailable: online
   alarmNotvailable: offline
@@ -137,6 +139,8 @@ hadiscovery:
     sensorBatteryConfig: ${discoveryPrefix}/binary_sensor/ialarm_zone_${zoneId}/battery/config
     sensorAlarmConfig: ${discoveryPrefix}/binary_sensor/ialarm_zone_${zoneId}/alarm/config
     sensorConnectivityConfig: ${discoveryPrefix}/binary_sensor/ialarm_zone_${zoneId}/connectivity/config
+    sensorZoneIdConfig: ${discoveryPrefix}/sensor/ialarm_zone_${zoneId}/id/config
+    zoneDirectoryConfig: ${discoveryPrefix}/sensor/ialarm/zone_directory/config
     bypassConfig: ${discoveryPrefix}/switch/ialarm/${zoneId}/config
     clearCacheConfig: ${discoveryPrefix}/switch/ialarm/clear_cache/config
     clearDiscoveryConfig: ${discoveryPrefix}/switch/ialarm/clear_discovery/config

@@ -487,6 +487,10 @@ export const ialarmMqtt = (config) => {
     if (!enabled) {
       logger.warn('Home assistant discovery disabled (empty config.hadiscovery)')
     }
+    // publish the zone id -> name directory (retained) for the global directory sensor
+    if (enabled && configHandler.isFeatureEnabled(config, 'zoneId')) {
+      publisher.publishZoneDirectory(Object.values(zonesCache.zones))
+    }
     discovered = true
   }
 
