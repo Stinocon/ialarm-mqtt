@@ -16,7 +16,15 @@ This fork provides **critical fixes and improvements** over the original:
 | **Unique IDs** | May conflict | ✅ **Suffix support** (`_ialarmv2`) |
 | **Device Naming** | Generic | ✅ **Customizable suffix** |
 | **Manufacturer** | Fixed `Meian` | ✅ **Configurable branding** |
+| **Arm modes** | Full list (shows Night/Vacation/Custom buttons) | ✅ **Configurable `supported_features`** (default Home/Away) |
+| **Zone ID mapping** | ❌ Not exposed | ✅ **Zone ID sensor + `id → name` directory** (`zoneId` feature) |
 | **Connection** | Single connection only | ⚠️ **Single connection only** (hardware limitation) |
+
+> ⚠️ **Disclaimer — "vibecoded" fork.** All enhancements and fixes in this fork (vs the
+> original [maxill1/ialarm-mqtt](https://github.com/maxill1/ialarm-mqtt)) were *vibecoded*:
+> developed with AI assistance rather than hand-written by a maintainer with deep knowledge
+> of the codebase. They are tested as documented and work for the maintainer's setup, but
+> use them at your own risk.
 
 ## 🔧 Coexistence Configuration
 
@@ -41,6 +49,10 @@ branding:
 - zone info (ok/problem, open, alarm, bypass, fault, low battery, signal loss)
   - Note: to obtain "open" in real time enable DoorDetect ("Ispezione sensori porta") in the panel options (`http://192.168.1.x/Option.htm`).
 - Home Assistant [MQTT Discovery](https://www.home-assistant.io/docs/mqtt/discovery/)
+- configurable arm modes via `hadiscovery.supportedFeatures` (default `["arm_home", "arm_away"]`) — hides the unused Night/Vacation/Custom-bypass buttons in HA
+- zone ID indicators (enable the `zoneId` feature):
+  - a diagnostic **Zone ID** sensor on each zone device (the panel zone number, e.g. `6`)
+  - a global **zone directory** sensor on the alarm device whose attributes hold the full `id → name` map (published retained to `{prefix}/zones/directory`), handy for automations such as "which open zone is blocking arming?"
 
 ## Quick start
 1) Install (npx / npm -g / Docker): see the wiki
@@ -88,6 +100,10 @@ If HA had previously nulled names due to violations, new compliant names will be
 - **Original Repository:** https://github.com/maxill1/ialarm-mqtt
 
 ## Changelog (highlights)
+- **0.15.14** (Enhanced)
+  - feat: zone ID indicators behind the `zoneId` feature — per-zone diagnostic ID sensor + global `id → name` directory sensor (additive, reuses existing MQTT data, existing entities untouched)
+- **0.15.13** (Enhanced)
+  - feat: configurable `hadiscovery.supportedFeatures` (default `["arm_home", "arm_away"]`) so HA only shows the supported arm modes
 - **0.14.2** (Enhanced)
   - fix: correct branding defaults in addon configuration for proper coexistence
   - fix: prefix: "ialarm-v2" (vs "ialarm" in original)
