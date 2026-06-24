@@ -55,13 +55,19 @@ branding:
   - a global **zone directory** sensor on the alarm device whose attributes hold the full `id → name` map (published retained to `{prefix}/zones/directory`), handy for automations such as "which open zone is blocking arming?"
   - both ship with clean default entity IDs (`sensor.<zone>_ialarm_id_zona`, `sensor.ialarm_zone_directory`) via `default_entity_id`. HA only applies this on first creation, so delete any previously-created zone ID entities once to have them recreated with the clean IDs.
 
+> Most users run this through the Home Assistant add-on
+> ([Stinocon/addons](https://github.com/Stinocon/addons)) — see its README for the full,
+> fork-specific configuration. The steps below are for running the bridge standalone.
+> Links marked _(original project wiki)_ point to the upstream maxill1 wiki for general
+> reference; they predate this fork's enhancements.
+
 ## Quick start
-1) Install (npx / npm -g / Docker): see the wiki
-- Installation: https://github.com/maxill1/ialarm-mqtt/wiki/Installation
+1) Install (npx / npm -g / Docker)
+- Installation _(original project wiki)_: https://github.com/maxill1/ialarm-mqtt/wiki/Installation
 
 2) Configure
 - Copy and edit `templates/tmpl.config.yaml` (or use the generated `templates/full.config.yaml`)
-- Docs: https://github.com/maxill1/ialarm-mqtt/wiki/Configuration
+- Config reference _(original project wiki)_: https://github.com/maxill1/ialarm-mqtt/wiki/Configuration
 
 3) Run
 ```bash
@@ -71,7 +77,7 @@ node ./bin/ialarm-mqtt.js -c /path/to/config/folder
 ## Home Assistant integration
 - Discovery is automatic if enabled in config.
 - Entities have stable `unique_id`; HA will keep the same `entity_id` across restarts.
-- Docs and examples: https://github.com/maxill1/ialarm-mqtt/wiki/Home-Assistant-Integration
+- General docs and examples _(original project wiki)_: https://github.com/maxill1/ialarm-mqtt/wiki/Home-Assistant-Integration
 
 ### Discovery topics and controls
 - Reset/trigger discovery via MQTT (see `topics.alarm.*` in config):
@@ -107,7 +113,7 @@ for the full version history. The packaged add-on also keeps a user-facing chang
 [`addons/ialarm-mqtt/CHANGELOG.md`](https://github.com/Stinocon/addons/blob/master/ialarm-mqtt/CHANGELOG.md).
 
 ## Troubleshooting
-Common issues and hints: https://github.com/maxill1/ialarm-mqtt/wiki/Troubleshooting
+Common issues and hints _(original project wiki)_: https://github.com/maxill1/ialarm-mqtt/wiki/Troubleshooting
 
 ## License
 MIT
