@@ -639,7 +639,10 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         payload_arm_away: config.payloads.alarm.armAway,
         payload_available: config.payloads.alarmAvailable,
         payload_not_available: config.payloads.alarmNotvailable,
-        qos: config.hadiscovery.alarm_qos
+        qos: config.hadiscovery.alarm_qos,
+        // Only advertise the arm modes the addon actually supports, so HA hides
+        // unused buttons (Night/Vacation/Custom bypass). Disarm is always available.
+        supported_features: config.hadiscovery.supportedFeatures
       }
       // optional
       if (config.hadiscovery.code) {

@@ -173,6 +173,7 @@ function initDefaults (config, configFile) {
     _checkConfig(config, ['hadiscovery', 'alarm_qos'], 0, config.topics.alarm_qos || (config.topics.alarm && config.topics.alarm.alarm_qos) || 2)
     _checkConfig(config, ['hadiscovery', 'sensors_qos'], 0, config.topics.sensors_qos || (config.topics.sensors && config.topics.sensors.sensors_qos) || 0)
     _checkConfig(config, ['hadiscovery', 'code'], 0, '')
+    _checkConfig(config, ['hadiscovery', 'supportedFeatures'], 0, ['arm_home', 'arm_away'])
 
     // default device_class mappings and old config cleanup
     if (config.hadiscovery &&
@@ -303,6 +304,8 @@ export const configHandler = {
     config.hadiscovery.zoneName = hassos.zoneName || hassos.hadiscovery.zoneName || 'Zone'
     config.hadiscovery.events = hassos.events || hassos.hadiscovery.events
     config.hadiscovery.bypass = hassos.bypass || hassos.hadiscovery.bypass
+    config.hadiscovery.supportedFeatures =
+      hassos.supportedFeatures || (hassos.hadiscovery && hassos.hadiscovery.supportedFeatures) || ['arm_home', 'arm_away']
 
     // merge zones
     config.zones = hassos.zones

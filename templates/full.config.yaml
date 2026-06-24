@@ -143,6 +143,9 @@ hadiscovery:
     clearTriggeredConfig: ${discoveryPrefix}/switch/ialarm/clear_triggered/config
   zoneName: Zone
   alarm_qos: 2
+  supportedFeatures:
+    - arm_home
+    - arm_away
   sensors_qos: 0
   code: ""
   zones:
