@@ -53,6 +53,7 @@ branding:
 - zone ID indicators (enable the `zoneId` feature):
   - a diagnostic **Zone ID** sensor on each zone device (the panel zone number, e.g. `6`)
   - a global **zone directory** sensor on the alarm device whose attributes hold the full `id → name` map (published retained to `{prefix}/zones/directory`), handy for automations such as "which open zone is blocking arming?"
+  - both ship with clean default entity IDs (`sensor.<zone>_ialarm_id_zona`, `sensor.ialarm_zone_directory`) via `default_entity_id`. HA only applies this on first creation, so delete any previously-created zone ID entities once to have them recreated with the clean IDs.
 
 ## Quick start
 1) Install (npx / npm -g / Docker): see the wiki
@@ -99,45 +100,11 @@ If HA had previously nulled names due to violations, new compliant names will be
 - **Home Assistant Add-on:** https://github.com/Stinocon/addons
 - **Original Repository:** https://github.com/maxill1/ialarm-mqtt
 
-## Changelog (highlights)
-- **0.15.14** (Enhanced)
-  - feat: zone ID indicators behind the `zoneId` feature — per-zone diagnostic ID sensor + global `id → name` directory sensor (additive, reuses existing MQTT data, existing entities untouched)
-- **0.15.13** (Enhanced)
-  - feat: configurable `hadiscovery.supportedFeatures` (default `["arm_home", "arm_away"]`) so HA only shows the supported arm modes
-- **0.14.2** (Enhanced)
-  - fix: correct branding defaults in addon configuration for proper coexistence
-  - fix: prefix: "ialarm-v2" (vs "ialarm" in original)
-  - fix: uniqueIdSuffix: "_ialarmv2" (vs "" in original)
-  - fix: deviceNameSuffix: " (Enhanced)" (vs "" in original)
-  - fix: manufacturer: "Antifurto365" (vs "Meian" in original)
-- **0.14.1** (Enhanced)
-  - fix: implement robust cleanZoneName() function to eliminate all duplication patterns
-  - fix: handle patterns like 'pir_corridoio_pir_corridoio' -> 'pir_corridoio'
-  - fix: force entity regeneration with unique_id version bump to v5
-  - feat: clean, professional entity names without redundancy
-- **0.12.6** (Enhanced)
-  - fix: eliminate automatic _2, _3, _4 suffixes from Home Assistant entity names
-  - feat: specific entity names for each zone sensor type (Stato, Batteria, Connessione)
-  - feat: clean, professional entity naming without ugly automatic suffixes
-- **0.12.5** (Enhanced)
-  - feat: cleaner entity naming without redundancy
-  - feat: improved bypass entity naming
-  - feat: updated branding defaults for better coexistence
-- **0.12.3** (Enhanced)
-  - **BREAKING:** Enable coexistence with original ialarm-mqtt addon
-  - feat: configurable MQTT prefix via `branding.prefix` (default: "ialarm-v2")
-  - feat: configurable unique_id suffix via `branding.uniqueIdSuffix` 
-  - feat: configurable device name suffix via `branding.deviceNameSuffix`
-  - feat: configurable manufacturer via `branding.manufacturer`
-  - fix: allow side-by-side deployment with upstream addon using different prefixes
-- 0.12.2
-  - Fix: prevent duplicate HA discovery publishes (eliminates entity name flip-flop)
-  - Fix: comply with HA 2024.2+ entity naming rules
-  - Add: structured logs for discovery topics and `unique_id`
-- 0.12.1
-  - Internal improvements and logging
+## Changelog
 
-Full history in Git tags and commit messages.
+See the [git tags / releases](https://github.com/Stinocon/ialarm-mqtt/tags) and commit history
+for the full version history. The packaged add-on also keeps a user-facing changelog in
+[`addons/ialarm-mqtt/CHANGELOG.md`](https://github.com/Stinocon/addons/blob/master/ialarm-mqtt/CHANGELOG.md).
 
 ## Troubleshooting
 Common issues and hints: https://github.com/maxill1/ialarm-mqtt/wiki/Troubleshooting
