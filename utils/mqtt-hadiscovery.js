@@ -816,22 +816,22 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
   this.createMessages = function () {
     const messages = []
     const zones = zonesToConfig // Fix: assign zonesToConfig to zones variable
-    logger.info(`IAlarmHaDiscovery.createMessages called: reset=${reset}, zones=${zones.length}`)
+    logger.debug(`IAlarmHaDiscovery.createMessages called: reset=${reset}, zones=${zones.length}`)
 
     // cleanup old topics structures
     if (reset) {
-      logger.info('Creating reset cleanup messages...')
+      logger.debug('Creating reset cleanup messages...')
       messages.push(configCleanup('${discoveryPrefix}/alarm_control_panel/ialarm/config'))
       messages.push(configCleanup('${discoveryPrefix}/sensor/ialarm/error/config'))
       messages.push(configCleanup('ialarm/alarm/error')) 
-      logger.info(`Created ${messages.length} reset cleanup messages`)
+      logger.debug(`Created ${messages.length} reset cleanup messages`)
     }
 
     //iterating all 128 zones
     const maxZones = configHandler.getMaxZones()
     const zonesArray = Array.isArray(zones) ? zones : []
     
-    logger.info(`Starting zone iteration: maxZones=${maxZones}, zones.length=${zonesArray.length}`)
+    logger.debug(`Starting zone iteration: maxZones=${maxZones}, zones.length=${zonesArray.length}`)
     
     for (let i = 0; i < maxZones; i++) {
       if (i % 10 === 0) {

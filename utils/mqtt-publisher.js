@@ -506,14 +506,9 @@ export const MqttPublisher = function (config) {
     const now = Date.now()
     // with discovery off, clearing the configs is the only meaningful action
     reset = reset || !on
-    logger.info(`Discovery called: on=${on}, reset=${reset}, zones=${zones ? zones.length : 0}, discoveryInProgress=${discoveryInProgress}`)
-    
-    // 🚨 EMERGENCY DEBUG LOGGING
-    logger.info(`=== DISCOVERY DEBUG ===`)
-    logger.info(`Zones: ${JSON.stringify(zones ? zones.map(z => ({id: z.id, name: z.name, typeId: z.typeId})) : 'null')}`)
-    logger.info(`Config HA discovery enabled: ${config.hadiscovery?.enabled}`)
-    logger.info(`=======================`)
-    
+    logger.debug(`Discovery called: on=${on}, reset=${reset}, zones=${zones ? zones.length : 0}, discoveryInProgress=${discoveryInProgress}`)
+    logger.debug(`Discovery zones: ${JSON.stringify(zones ? zones.map(z => ({ id: z.id, name: z.name, typeId: z.typeId })) : 'null')}`)
+
     if (discoveryInProgress) {
       const timeSinceStart = now - (lastDiscoveryCompletedAt || 0)
       if (timeSinceStart > 60000) {
@@ -539,7 +534,7 @@ export const MqttPublisher = function (config) {
 
     discoveryInProgress = true
     discoveryStartTime = Date.now()
-    logger.info(`Starting discovery process at ${new Date(discoveryStartTime).toISOString()}`)
+    logger.debug(`Starting discovery process at ${new Date(discoveryStartTime).toISOString()}`)
     
     const safetyTimeout = setTimeout(() => {
       if (discoveryInProgress) {
@@ -555,19 +550,19 @@ export const MqttPublisher = function (config) {
     // ✅ FIX: Genera tutti i messaggi prima di pubblicare
     try {
       if (reset) {
-        logger.info('Creating reset messages...')
+        logger.debug('Creating reset messages...')
         const discoveryInstanceReset = new IAlarmHaDiscovery(config, zones, true, deviceInfo)
         resetMessages = discoveryInstanceReset.createMessages()
-        logger.info(`Created ${resetMessages.length} reset messages`)
+        logger.debug(`Created ${resetMessages.length} reset messages`)
       } else {
         logger.info('Skipping discovery reset: entities are updated in place (no history gap)')
       }
 
       if (on) {
-        logger.info('Creating discovery messages...')
+        logger.debug('Creating discovery messages...')
         const discoveryInstanceMain = new IAlarmHaDiscovery(config, zones, false, deviceInfo)
         discoveryMessages = discoveryInstanceMain.createMessages()
-        logger.info(`Created ${discoveryMessages.length} discovery messages`)
+        logger.debug(`Created ${discoveryMessages.length} discovery messages`)
       }
     } catch (error) {
       logger.error(`ERROR in createMessages(): ${error.message}`)
@@ -580,7 +575,9 @@ export const MqttPublisher = function (config) {
     }
 
     // Fase 1: Pubblica reset messages
-    logger.info(`Publishing HA discovery reset for ${resetMessages.length} topics`)
+    if (resetMessages.length > 0) {
+      logger.info(`Publishing HA discovery reset for ${resetMessages.length} topics`)
+    }
     for (let index = 0; index < resetMessages.length; index++) {
       const m = resetMessages[index]
       if (m && m.topic) {
