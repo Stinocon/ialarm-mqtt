@@ -403,7 +403,14 @@ export const ialarmMqtt = (config) => {
   })
 
   let zonesCache = {}
+  // status polling: suspended while a command is in flight
   const pollings = []
+  // availability, diagnostics and the polling watchdog: never suspended
+  const serviceTimers = []
+  // how long the status polling may stay stopped with the panel connected
+  const POLLING_WATCHDOG_MS = 30000
+  // evaluated once: isFeatureEnabled logs a warning on every miss
+  const statusPollingEnabled = configHandler.isFeatureEnabled(config, ['armDisarm', 'sensors', 'bypass'])
 
   function handleError (e) {
     let msg
@@ -628,57 +635,99 @@ export const ialarmMqtt = (config) => {
   }
 
   /**
-   * stop polling
+   * Stop the status polling. Arm/disarm and bypass do this to free the single
+   * TCP connection the panel allows while their command is in flight; it used
+   * to be a no-op, because clearInterval was handed the array instead of the
+   * timers inside it, and the array was never emptied.
    */
   function stopPolling () {
-    // reset timers
-    if (pollings.length > 0) {
-      clearInterval(pollings)
+    if (pollings.length === 0) {
+      return
     }
+    while (pollings.length > 0) {
+      clearInterval(pollings.pop())
+    }
+    logger.debug('Status polling stopped')
   }
 
   /**
-   * Check if any timeout is currently active
+   * Check if the status polling is currently running
    * @returns
    */
   function isPolling () {
-    return pollings && pollings.length > 0
+    return pollings.length > 0
   }
 
   /**
-   * set up pollings
+   * Status polling: the only timer commands are allowed to suspend.
    * @returns
    */
   function startPolling () {
+    if (!statusPollingEnabled) {
+      logger.debug('Status disabled in config file')
+      return
+    }
     if (isPolling()) {
       return
     }
 
+    logger.info(`Status polling every ${config.server.polling_status}ms`)
     pollings.push(setInterval(function () {
+      if ((!zonesCache.zones || zonesCache.zones.length === 0) && !config.deviceInfo) {
+        publisher.publishConnectionStatus(!MeianConnection.status.isDisconnected(), 'Missing network and zone infos')
+        return
+      }
+      fetchStatus()
+    }, config.server.polling_status))
+  }
+
+  /**
+   * Availability and diagnostics: they don't talk to the panel, so a command
+   * has no reason to suspend them. Started once and left alone — when they
+   * lived in the same list as the status polling, every arm/disarm restarted
+   * their interval from zero and a busy hour could starve them completely.
+   */
+  function startServiceTimers () {
+    if (serviceTimers.length > 0) {
+      return
+    }
+
+    // Only claim availability while the panel link is actually up: this timer
+    // used to republish "online" every 5 minutes regardless, undoing the
+    // "offline" that onDisconnected had just published.
+    serviceTimers.push(setInterval(function () {
+      if (MeianConnection.status.isDisconnected()) {
+        return
+      }
       publisher.publishAvailable(true)
     }, 300000))
 
-    // bridge health, on a slower timer than the status polling
     if (diagnosticsEnabled) {
       const diagnosticsInterval = config.server.polling_diagnostics || 60000
-      logger.info(`Diagnostics polling every ${diagnosticsInterval}ms`)
-      pollings.push(setInterval(function () {
+      logger.info(`Diagnostics publishing every ${diagnosticsInterval}ms`)
+      serviceTimers.push(setInterval(function () {
         publishDiagnostics()
       }, diagnosticsInterval))
     }
 
-    // alarm and sensor status
-    if (configHandler.isFeatureEnabled(config, ['armDisarm', 'sensors', 'bypass'])) {
-      logger.info(`Status polling every ${config.server.polling_status}ms`)
-      pollings.push(setInterval(function () {
-        if ((!zonesCache.zones || zonesCache.zones.length === 0) && !config.deviceInfo) {
-          publisher.publishConnectionStatus(!MeianConnection.status.isDisconnected(), 'Missing network and zone infos')
+    // Safety net for the status polling: it is onResponse that restarts it
+    // after a command, so a command that never gets an answer would otherwise
+    // leave the bridge alive but silent, with no error to trigger a reconnect.
+    if (statusPollingEnabled) {
+      serviceTimers.push(setInterval(function () {
+        if (isPolling() || MeianConnection.status.isDisconnected()) {
           return
         }
-        fetchStatus()
-      }, config.server.polling_status))
-    } else {
-      logger.debug('Status disabled in config file')
+        logger.warn(`Status polling has been stopped for over ${POLLING_WATCHDOG_MS}ms with the panel connected: restarting it`)
+        startPolling()
+      }, POLLING_WATCHDOG_MS))
+    }
+  }
+
+  function stopAllTimers () {
+    stopPolling()
+    while (serviceTimers.length > 0) {
+      clearInterval(serviceTimers.pop())
     }
   }
 
@@ -706,12 +755,15 @@ export const ialarmMqtt = (config) => {
         diagnostics.onMqttConnected(true)
         // reset timers
         stopPolling()
+        // service timers start with MQTT, not with the panel: diagnostics have
+        // to be published precisely when the panel cannot be reached
+        startServiceTimers()
         connectToAlarm()
       },
       // on disconnection end polling and close app
       () => {
         diagnostics.onMqttConnected(false)
-        stop(pollings)
+        stop()
       }
     )
   }
@@ -719,7 +771,8 @@ export const ialarmMqtt = (config) => {
   function stop () {
     logger.info('Stopping...')
     // reset timers
-    stopPolling()
+    stopAllTimers()
+    cancelReconnect()
 
     // exit ialarm-mqtt
     process.exit(1)
