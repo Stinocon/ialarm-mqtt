@@ -26,6 +26,8 @@ export const Diagnostics = function (config) {
     lastErrorAt: undefined,
     connections: 0,
     disconnections: 0,
+    reconnectAttempts: 0,
+    nextReconnectAt: undefined,
     lastConnectedAt: undefined,
     lastDisconnectedAt: undefined,
     lastDiscoveryAt: undefined,
@@ -107,6 +109,16 @@ export const Diagnostics = function (config) {
   this.onPanelConnected = function () {
     state.connections++
     state.lastConnectedAt = new Date()
+    state.nextReconnectAt = undefined
+  }
+
+  /**
+   * A reconnection attempt has been queued (the panel is unreachable)
+   * @param {*} delayMs how long until the attempt
+   */
+  this.onReconnectScheduled = function (delayMs) {
+    state.reconnectAttempts++
+    state.nextReconnectAt = new Date(Date.now() + (delayMs || 0))
   }
 
   this.onPanelDisconnected = function () {
@@ -140,6 +152,8 @@ export const Diagnostics = function (config) {
       panelHost: `${config.server.host}:${config.server.port}`,
       connections: state.connections,
       disconnections: state.disconnections,
+      reconnectAttempts: state.reconnectAttempts,
+      nextReconnectAt: _iso(state.nextReconnectAt),
       lastConnectedAt: _iso(state.lastConnectedAt),
       lastDisconnectedAt: _iso(state.lastDisconnectedAt),
       pollingEnabled,

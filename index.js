@@ -65,6 +65,57 @@ export const ialarmMqtt = (config) => {
     socket.connect()
   }
 
+  // Reconnection. It used to hang off `errorCount > 10`, which the panel being
+  // unreachable at start-up can never reach: the first ECONNREFUSED is followed
+  // by a disconnect that resets the counter, nothing else ever produces an
+  // error, and the bridge sat there until someone restarted the add-on.
+  const RECONNECT_MIN_MS = 5000
+  const RECONNECT_MAX_MS = 60000
+  let reconnectDelay = RECONNECT_MIN_MS
+  let reconnectTimer
+
+  /**
+   * Ask for a reconnection attempt, unless one is already pending. Backs off up
+   * to RECONNECT_MAX_MS so an unreachable panel is retried forever without
+   * hammering it.
+   * @param {*} reason for the log
+   */
+  function scheduleReconnect (reason) {
+    if (reconnectTimer) {
+      return
+    }
+    const delay = reconnectDelay
+    logger.info(`Reconnecting to the panel in ${delay}ms (${reason})`)
+    diagnostics.onReconnectScheduled(delay)
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = undefined
+
+      // the connection recovered on its own in the meantime
+      if (MeianConnection.status.isReady() || MeianConnection.status.isPending()) {
+        logger.info('Panel connection is healthy, no reconnection needed')
+        cancelReconnect()
+        return
+      }
+      // still connecting or authenticating: check again later rather than
+      // giving up, which is how the old code got stuck
+      if (!MeianConnection.status.isDisconnected()) {
+        scheduleReconnect(`connection is ${MeianConnection.status.text()}`)
+        return
+      }
+
+      reconnectDelay = Math.min(reconnectDelay * 2, RECONNECT_MAX_MS)
+      connectToAlarm()
+    }, delay)
+  }
+
+  function cancelReconnect () {
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer)
+      reconnectTimer = undefined
+    }
+    reconnectDelay = RECONNECT_MIN_MS
+  }
+
   function executeCommand (commands, args) {
     try {
       const delay = MeianConnection.status.isReady() ? 0 : 200
@@ -103,6 +154,9 @@ export const ialarmMqtt = (config) => {
 
     // availability
     publisher.publishAvailable(true)
+
+    // we are in: stop retrying and reset the backoff
+    cancelReconnect()
 
     diagnostics.onPanelConnected()
     publishDiagnostics()
@@ -319,6 +373,8 @@ export const ialarmMqtt = (config) => {
     errorCount = 0
 
     diagnostics.onPanelDisconnected()
+    // schedule first: the payload carries when the next attempt is due
+    scheduleReconnect(`disconnected (${disconnectionResponse})`)
     publishDiagnostics()
   })
 
@@ -330,20 +386,20 @@ export const ialarmMqtt = (config) => {
     logger.info(`Error ${error.message} - ${JSON.stringify(error.stack)}`)
 
     diagnostics.onError(error)
-    publishDiagnostics()
 
     // stop
     stopPolling()
 
-    // disconnect
+    // a connection that keeps failing while believing it is up: drop it so the
+    // reconnection below starts from a clean state
     if (errorCount > 10) {
+      errorCount = 0
       socket.disconnect('error')
-
-      // retry after some time
-      setTimeout(() => {
-        connectToAlarm()
-      }, 5000)
     }
+
+    // schedule first: the payload carries when the next attempt is due
+    scheduleReconnect(`error: ${(error && error.message) || 'unknown'}`)
+    publishDiagnostics()
   })
 
   let zonesCache = {}

@@ -20,6 +20,7 @@ This fork provides **critical fixes and improvements** over the original:
 | **Zone ID mapping** | ❌ Not exposed | ✅ **Zone ID sensor + `id → name` directory** (`zoneId` feature) |
 | **Bridge health** | ❌ Add-on log only | ✅ **Diagnostic entities** (link health, last poll, error counters — `diagnostics` feature) |
 | **Discovery on restart** | ❌ Deletes and recreates every entity | ✅ **Updated in place** — no history gap (`hadiscovery.resetOnStart`) |
+| **Panel unreachable at start** | ❌ Bridge hangs until restarted | ✅ **Retries forever with backoff** (5s → 60s) |
 | **Connection** | Single connection only | ⚠️ **Single connection only** (hardware limitation) |
 
 > ⚠️ **Disclaimer — "vibecoded" fork.** All enhancements and fixes in this fork (vs the
@@ -56,8 +57,9 @@ branding:
   - a diagnostic **Zone ID** sensor on each zone device (the panel zone number, e.g. `6`)
   - a global **zone directory** sensor on the alarm device whose attributes hold the full `id → name` map (published retained to `{prefix}/zones/directory`), handy for automations such as "which open zone is blocking arming?"
   - both ship with clean default entity IDs (`sensor.<zone>_ialarm_id_zona`, `sensor.ialarm_zone_directory`) via `default_entity_id`. HA only applies this on first creation, so delete any previously-created zone ID entities once to have them recreated with the clean IDs.
+- reconnection to the panel with exponential backoff (5s doubling up to 60s), retried for as long as the panel is unreachable. Previously the retry was gated behind an error counter that a panel unreachable at start-up could never reach, and the bridge sat idle until someone restarted it.
 - bridge diagnostics (enable the `diagnostics` feature) — four diagnostic sensors on the alarm device, all fed by a single retained payload on `{prefix}/alarm/diagnostics`:
-  - **Diagnostics** (`sensor.ialarm_diagnostics`) — `ok` / `degraded` / `starting` / `offline`, with the whole payload as attributes (panel status, uptime, counters, `lastError`, `zonesLoaded`, `lastDiscoveryAt`, …)
+  - **Diagnostics** (`sensor.ialarm_diagnostics`) — `ok` / `degraded` / `starting` / `offline`, with the whole payload as attributes (panel status, uptime, counters, `lastError`, `zonesLoaded`, `reconnectAttempts`, `nextReconnectAt`, `lastDiscoveryAt`, …)
   - **Last poll** (`sensor.ialarm_last_poll`) — timestamp of the last successful read from the panel
   - **Connection errors** and **Panel disconnections** — counters since the bridge started
   - published on their own timer (`server.polling_diagnostics`, default 60s) plus immediately on connect/disconnect/error/discovery, so the HA recorder is not flooded at the status-polling rate
