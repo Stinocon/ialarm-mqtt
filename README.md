@@ -18,6 +18,7 @@ This fork provides **critical fixes and improvements** over the original:
 | **Manufacturer** | Fixed `Meian` | ✅ **Configurable branding** |
 | **Arm modes** | Full list (shows Night/Vacation/Custom buttons) | ✅ **Configurable `supported_features`** (default Home/Away) |
 | **Zone ID mapping** | ❌ Not exposed | ✅ **Zone ID sensor + `id → name` directory** (`zoneId` feature) |
+| **Bridge health** | ❌ Add-on log only | ✅ **Diagnostic entities** (link health, last poll, error counters — `diagnostics` feature) |
 | **Connection** | Single connection only | ⚠️ **Single connection only** (hardware limitation) |
 
 > ⚠️ **Disclaimer — "vibecoded" fork.** All enhancements and fixes in this fork (vs the
@@ -54,6 +55,12 @@ branding:
   - a diagnostic **Zone ID** sensor on each zone device (the panel zone number, e.g. `6`)
   - a global **zone directory** sensor on the alarm device whose attributes hold the full `id → name` map (published retained to `{prefix}/zones/directory`), handy for automations such as "which open zone is blocking arming?"
   - both ship with clean default entity IDs (`sensor.<zone>_ialarm_id_zona`, `sensor.ialarm_zone_directory`) via `default_entity_id`. HA only applies this on first creation, so delete any previously-created zone ID entities once to have them recreated with the clean IDs.
+- bridge diagnostics (enable the `diagnostics` feature) — four diagnostic sensors on the alarm device, all fed by a single retained payload on `{prefix}/alarm/diagnostics`:
+  - **Diagnostics** (`sensor.ialarm_diagnostics`) — `ok` / `degraded` / `starting` / `offline`, with the whole payload as attributes (panel status, uptime, counters, `lastError`, `zonesLoaded`, `lastDiscoveryAt`, …)
+  - **Last poll** (`sensor.ialarm_last_poll`) — timestamp of the last successful read from the panel
+  - **Connection errors** and **Panel disconnections** — counters since the bridge started
+  - published on their own timer (`server.polling_diagnostics`, default 60s) plus immediately on connect/disconnect/error/discovery, so the HA recorder is not flooded at the status-polling rate
+  - deliberately **without an availability topic**: availability goes offline exactly when the panel link drops, which is when these values are worth reading. Use the `lastUpdated` attribute to judge freshness.
 
 > Most users run this through the Home Assistant add-on
 > ([Stinocon/addons](https://github.com/Stinocon/addons)) — see its README for the full,

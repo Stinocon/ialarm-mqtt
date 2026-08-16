@@ -2,6 +2,7 @@
 import { MeianSocket, MeianDataHandler, MeianLogger, MeianConnection, MeianStatusDecoder } from 'ialarm'
 import { MqttPublisher } from './utils/mqtt-publisher.js'
 import { configHandler } from './utils/config-handler.js'
+import { Diagnostics } from './utils/diagnostics.js'
 
 export const ialarmMqtt = (config) => {
   const logger = MeianLogger(config.debug ? 'debug' : 'info')
@@ -15,6 +16,30 @@ export const ialarmMqtt = (config) => {
   let discovered = false
 
   const publisher = new MqttPublisher(config)
+
+  // health counters of the bridge itself (panel link, polling, errors)
+  const diagnostics = new Diagnostics(config)
+  // evaluated once: isFeatureEnabled logs a warning on every miss
+  const diagnosticsEnabled = configHandler.isFeatureEnabled(config, 'diagnostics')
+  // events can burst (an error storm retries 10 times): don't publish more
+  // often than this, the timer keeps the payload fresh anyway
+  const DIAGNOSTICS_MIN_INTERVAL_MS = 5000
+  let lastDiagnosticsAt = 0
+
+  /**
+   * Publish the health payload, throttled.
+   */
+  function publishDiagnostics () {
+    if (!diagnosticsEnabled) {
+      return
+    }
+    const now = Date.now()
+    if (now - lastDiagnosticsAt < DIAGNOSTICS_MIN_INTERVAL_MS) {
+      return
+    }
+    lastDiagnosticsAt = now
+    publisher.publishDiagnostics(diagnostics.payload())
+  }
 
   // if we configured 17 zone, there is no need to call GetZone or GetByWay for all 40/128 default zones
   const maxZone = Math.max(...config.server.zones)
@@ -78,6 +103,9 @@ export const ialarmMqtt = (config) => {
 
     // availability
     publisher.publishAvailable(true)
+
+    diagnostics.onPanelConnected()
+    publishDiagnostics()
 
     // we are ready to start tcp polling
     startPolling()
@@ -211,6 +239,7 @@ export const ialarmMqtt = (config) => {
       // remove empty or disabled zones
       zonesCache.zones = removeDisabledZones(zoneNames, config.server.showUnnamedZones)
       zonesCache.caching = false
+      diagnostics.setZonesLoaded(zonesCache.zones.length)
     }
   }
 
@@ -239,6 +268,7 @@ export const ialarmMqtt = (config) => {
     // alarm is responding
     if (zonesResponse.status && zonesResponse.zones) {
       publisher.publishConnectionStatus(!MeianConnection.status.isDisconnected(), 'OK')
+      diagnostics.onPollSuccess()
     }
   }
 
@@ -285,6 +315,9 @@ export const ialarmMqtt = (config) => {
     // availability
     publisher.publishAvailable(false)
     errorCount = 0
+
+    diagnostics.onPanelDisconnected()
+    publishDiagnostics()
   })
 
   socket.onError(async (error) => {
@@ -293,6 +326,9 @@ export const ialarmMqtt = (config) => {
     publisher.publishConnectionStatus(!MeianConnection.status.isDisconnected(), error.message || 'Generic error')
 
     logger.info(`Error ${error.message} - ${JSON.stringify(error.stack)}`)
+
+    diagnostics.onError(error)
+    publishDiagnostics()
 
     // stop
     stopPolling()
@@ -320,6 +356,9 @@ export const ialarmMqtt = (config) => {
     }
     const stack = e.stack ? JSON.stringify(e.stack) : ''
     publisher.publishConnectionStatus(!MeianConnection.status.isDisconnected(), msg, stack)
+
+    diagnostics.onError(msg)
+    publishDiagnostics()
   }
 
   function getZoneCache (id) {
@@ -377,6 +416,7 @@ export const ialarmMqtt = (config) => {
       }
 
       // 1, 2 or 3 commands
+      diagnostics.onPollAttempt()
       executeCommand(commands)
     } catch (error) {
       handleError(error)
@@ -492,6 +532,9 @@ export const ialarmMqtt = (config) => {
       publisher.publishZoneDirectory(Object.values(zonesCache.zones))
     }
     discovered = true
+
+    diagnostics.onDiscovery()
+    publishDiagnostics()
   }
 
   function resetCache () {
@@ -551,6 +594,15 @@ export const ialarmMqtt = (config) => {
       publisher.publishAvailable(true)
     }, 300000))
 
+    // bridge health, on a slower timer than the status polling
+    if (diagnosticsEnabled) {
+      const diagnosticsInterval = config.server.polling_diagnostics || 60000
+      logger.info(`Diagnostics polling every ${diagnosticsInterval}ms`)
+      pollings.push(setInterval(function () {
+        publishDiagnostics()
+      }, diagnosticsInterval))
+    }
+
     // alarm and sensor status
     if (configHandler.isFeatureEnabled(config, ['armDisarm', 'sensors', 'bypass'])) {
       logger.info(`Status polling every ${config.server.polling_status}ms`)
@@ -587,12 +639,14 @@ export const ialarmMqtt = (config) => {
     startMqtt(
       // on connection start tcp polling
       () => {
+        diagnostics.onMqttConnected(true)
         // reset timers
         stopPolling()
         connectToAlarm()
       },
       // on disconnection end polling and close app
       () => {
+        diagnostics.onMqttConnected(false)
         stop(pollings)
       }
     )

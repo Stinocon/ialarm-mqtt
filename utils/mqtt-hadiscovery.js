@@ -550,6 +550,82 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
   }
 
   /**
+     * Diagnostic entities describing the health of the bridge itself (panel
+     * link, polling, errors), all fed by the single diagnostics topic.
+     *
+     * They deliberately carry no availability block: the availability topic
+     * goes offline exactly when the panel connection drops, which is when
+     * these values matter most. Freshness is readable from the "lastUpdated"
+     * attribute instead.
+     * @param {*} topicTemplate discovery config topic
+     * @param {*} suffix unique_id/entity_id suffix
+     * @param {*} name entity name
+     * @param {*} valueTemplate
+     * @param {*} extra additional payload keys
+     * @returns
+     */
+  const configSensorDiagnostic = function (topicTemplate, suffix, name, valueTemplate, extra) {
+    let payload = ''
+    if (!reset) {
+      payload = {
+        name,
+        default_entity_id: `sensor.ialarm_${suffix}`,
+        state_topic: config.topics.diagnostics,
+        value_template: valueTemplate,
+        unique_id: `${alarmId}_${suffix}`,
+        entity_category: 'diagnostic',
+        device: deviceConfig,
+        qos: config.hadiscovery.sensors_qos,
+        ...extra
+      }
+    }
+    return {
+      topic: _getTopic(topicTemplate),
+      payload
+    }
+  }
+
+  /**
+     * Diagnostic sensors: health summary (with the full payload as attributes),
+     * last successful read, error and disconnection counters.
+     * @returns
+     */
+  const configSensorsDiagnostics = function () {
+    return [
+      configSensorDiagnostic(
+        config.hadiscovery.topics.diagnosticsConfig,
+        'diagnostics',
+        'Diagnostics',
+        '{{ value_json.health }}',
+        {
+          icon: 'mdi:stethoscope',
+          json_attributes_topic: config.topics.diagnostics,
+          json_attributes_template: '{{ value_json | tojson }}'
+        }),
+      configSensorDiagnostic(
+        config.hadiscovery.topics.lastPollConfig,
+        'last_poll',
+        'Last poll',
+        // empty until the first successful read, so HA leaves the state unknown
+        // instead of rejecting an invalid timestamp
+        "{{ value_json.lastPollOkAt if value_json.lastPollOkAt is defined else '' }}",
+        { device_class: 'timestamp' }),
+      configSensorDiagnostic(
+        config.hadiscovery.topics.connectionErrorsConfig,
+        'connection_errors',
+        'Connection errors',
+        '{{ value_json.errorCount }}',
+        { icon: 'mdi:alert-circle-outline', state_class: 'total_increasing' }),
+      configSensorDiagnostic(
+        config.hadiscovery.topics.panelDisconnectionsConfig,
+        'panel_disconnections',
+        'Panel disconnections',
+        '{{ value_json.disconnections }}',
+        { icon: 'mdi:lan-disconnect', state_class: 'total_increasing' })
+    ]
+  }
+
+  /**
      * Bypass switch
      * @param {*} zone
      * @param {*} i
@@ -851,6 +927,11 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
     // global zone directory (id -> name map)
     if (reset || configHandler.isFeatureEnabled(config, 'zoneId')) {
       messages.push(configSensorZoneDirectory())
+    }
+
+    // bridge health (panel link, polling, errors)
+    if (reset || configHandler.isFeatureEnabled(config, 'diagnostics')) {
+      configSensorsDiagnostics().forEach(message => messages.push(message))
     }
 
     // ✅ FIX: Filtra messaggi null/undefined

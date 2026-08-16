@@ -406,6 +406,18 @@ export const MqttPublisher = function (config) {
   }
 
   /**
+   * publish the bridge health payload (retained) feeding the HA diagnostic
+   * entities: panel link, polling and error counters.
+   * @param {*} diagnostics
+   */
+  this.publishDiagnostics = function (diagnostics) {
+    if (!diagnostics || !config.topics.diagnostics) {
+      return
+    }
+    _publish(config.topics.diagnostics, diagnostics)
+  }
+
+  /**
    * publish single sensor state using cache and updating only changed properties (example: push notification)
    * @param {*} zoneId
    * @param {*} changed

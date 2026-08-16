@@ -48,6 +48,7 @@ server:
   areas: 1
   delay: 200
   polling_status: 5000
+  polling_diagnostics: 60000
   features:
     - armDisarm
     - sensors
@@ -55,6 +56,7 @@ server:
     - bypass
     - zoneNames
     - zoneId
+    - diagnostics
 mqtt:
   host: 192.168.1.82
   port: "1883"
@@ -85,6 +87,7 @@ topics:
       lowBattery: ialarm/sensors/zone_${zoneId}/lowbat
       fault: ialarm/sensors/zone_${zoneId}/fault
   zonesDirectory: ialarm/zones/directory
+  diagnostics: ialarm/alarm/diagnostics
 payloads:
   alarmAvailable: online
   alarmNotvailable: offline
@@ -141,6 +144,10 @@ hadiscovery:
     sensorConnectivityConfig: ${discoveryPrefix}/binary_sensor/ialarm_zone_${zoneId}/connectivity/config
     sensorZoneIdConfig: ${discoveryPrefix}/sensor/ialarm_zone_${zoneId}/id/config
     zoneDirectoryConfig: ${discoveryPrefix}/sensor/ialarm/zone_directory/config
+    diagnosticsConfig: ${discoveryPrefix}/sensor/ialarm/diagnostics/config
+    lastPollConfig: ${discoveryPrefix}/sensor/ialarm/last_poll/config
+    connectionErrorsConfig: ${discoveryPrefix}/sensor/ialarm/connection_errors/config
+    panelDisconnectionsConfig: ${discoveryPrefix}/sensor/ialarm/panel_disconnections/config
     bypassConfig: ${discoveryPrefix}/switch/ialarm/${zoneId}/config
     clearCacheConfig: ${discoveryPrefix}/switch/ialarm/clear_cache/config
     clearDiscoveryConfig: ${discoveryPrefix}/switch/ialarm/clear_discovery/config
