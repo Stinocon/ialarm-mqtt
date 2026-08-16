@@ -160,7 +160,7 @@ export const MqttPublisher = function (config) {
       if (!topic.endsWith('/config')) {
         _cache.data[topic] = { payload: data, lastChecked: (data && data.lastChecked) || new Date() }
         const expire = _cacheExpireDate(_cache.data[topic].lastChecked)
-        logger.info(`Caching ${topic} until ${expire}`)
+        logger.debug(`Caching ${topic} until ${expire}`)
       }
 
       logger.info(`sending topic '${topic}' (changed: ${JSON.stringify(differences)}): ${dataLog}`)

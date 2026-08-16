@@ -22,6 +22,8 @@ This fork provides **critical fixes and improvements** over the original:
 | **Discovery on restart** | ❌ Deletes and recreates every entity | ✅ **Updated in place** — no history gap (`hadiscovery.resetOnStart`) |
 | **Panel unreachable at start** | ❌ Bridge hangs until restarted | ✅ **Retries forever with backoff** (5s → 60s) |
 | **Polling during a command** | ❌ Never actually suspended (competed for the single TCP link) | ✅ **Suspended and resumed**, with a 30s watchdog |
+| **Change detection** | ❌ Nested values never compared (stale entities until the cache expired) | ✅ **Fixed** — see `npm test` |
+| **Tests** | ❌ None | ✅ **65 checks** against a real broker, no panel needed |
 | **Connection** | Single connection only | ⚠️ **Single connection only** (hardware limitation) |
 
 > ⚠️ **Disclaimer — "vibecoded" fork.** All enhancements and fixes in this fork (vs the
@@ -114,6 +116,35 @@ Home Assistant 2024.2+ forbids entity names equal to, or starting with, the devi
 - Keeps `unique_id` stable so existing `entity_id` are preserved by HA
 
 If HA had previously nulled names due to violations, new compliant names will be applied on next discovery.
+
+## Tests
+
+```bash
+npm install
+npm test
+```
+
+The suites drive the real bridge against a throwaway MQTT broker (`aedes`, a dev dependency) —
+no panel and no Home Assistant needed. They take roughly two minutes, most of it spent waiting
+out the reconnection backoff and the polling watchdog, which are the behaviours worth pinning
+down. The output is verbose because the bridge logs as it runs; the lines that matter are
+`ok` / `FAIL` and the per-suite totals:
+
+```bash
+npm test 2>&1 | grep -E "^(===|  ok|  FAIL|  [0-9]+ ok)|^all suites"
+```
+
+| Suite | What it protects |
+|-------|------------------|
+| `message-compare` | that a changed payload is recognised as changed, nested values included — a miss leaves an entity stale until the cache expires |
+| `discovery` | the discovery payloads, and above all that `unique_id` and `default_entity_id` do not move: Home Assistant keys your manual renames to them |
+| `discovery-reset` | that a normal start never deletes entities, and that an explicit reset still does |
+| `reconnect` | that an unreachable panel is retried with a growing backoff instead of hanging |
+| `polling` | that a command suspends the status polling, its answer resumes it, and the watchdog covers an answer that never comes |
+
+`test/helpers/fake-ialarm.js` stands in for the panel library, so `index.js` can be exercised
+end to end without hardware; it is installed through a module hook, which is why the polling
+suite runs in its own process.
 
 ## 🔗 Repository Links
 

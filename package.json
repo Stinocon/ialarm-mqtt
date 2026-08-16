@@ -1,6 +1,6 @@
 {
     "name": "ialarm-mqtt",
-    "version": "0.15.19",
+    "version": "0.15.20",
     "description": "Enhanced iAlarm to MQTT bridge with clean entity naming",
     "type": "module",
     "repository": {
@@ -15,7 +15,8 @@
     "main": "index.js",
     "scripts": {
         "start": "node index.js",
-        "generate-yaml": "node ./bin/generate-config.js"
+        "generate-yaml": "node ./bin/generate-config.js",
+        "test": "node test/run.js"
     },
     "bin": {
         "ialarm-mqtt": "./bin/ialarm-mqtt.js"
@@ -32,6 +33,7 @@
     "author": "Luca Mazzilli",
     "license": "MIT",
     "devDependencies": {
+        "aedes": "^1.1.1",
         "eslint": "^8.26.0",
         "eslint-config-standard": "^17.0.0",
         "eslint-plugin-import": "^2.26.0",

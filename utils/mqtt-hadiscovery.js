@@ -453,7 +453,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
         device: getZoneDevice(zone),
         qos: config.hadiscovery.sensors_qos
       }
-      logger.info(`Zone unique_id: ${payload.unique_id}`)
+      logger.debug(`Zone unique_id (placeholder, overridden by the caller): ${payload.unique_id}`)
     }
     return {
       topic: _getTopic(topic, {
@@ -835,7 +835,7 @@ export default function (config, zonesToConfig, reset, deviceInfo) {
     
     for (let i = 0; i < maxZones; i++) {
       if (i % 10 === 0) {
-        logger.info(`Processing zone ${i}/${maxZones}...`)
+        logger.debug(`Processing zone ${i}/${maxZones}...`)
       }
       
       let zone

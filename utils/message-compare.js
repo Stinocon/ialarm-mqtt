@@ -25,10 +25,15 @@ export const MessageCompare = function (obj1, obj2) {
 
     if (typeof value1 !== typeof value2) {
       differences.push(diffString(key, value1, value2))
+      continue
     }
-    if (typeof value1 === 'object') {
-      // checking childs
-      const childs = !MessageCompare(value1, value2)
+    if (value1 !== null && typeof value1 === 'object') {
+      // checking childs. This used to negate the recursive call and read
+      // .length off a boolean, so nothing nested was ever compared: a payload
+      // like configStatus, whose only moving parts live under
+      // connectionStatus, looked unchanged and went stale until the cache
+      // expired.
+      const childs = MessageCompare(value1, value2)
       if (childs.length > 0) {
         differences.push(...childs)
       }

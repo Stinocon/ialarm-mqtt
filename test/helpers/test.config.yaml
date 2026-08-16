@@ -1,0 +1,21 @@
+# Config used by the test suite: a panel that does not exist and a broker the
+# helper points at a free port.
+server:
+  host: 127.0.0.1
+  port: 18034
+  username: test
+  password: test
+  zones: 8
+  polling_status: 300
+  polling_diagnostics: 6000
+mqtt:
+  host: 127.0.0.1
+  port: 1883
+  username: ""
+  password: ""
+  cache: 5m
+  retain: true
+verbose: false
+name: iAlarm Test
+hadiscovery:
+  enabled: true

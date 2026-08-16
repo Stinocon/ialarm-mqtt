@@ -443,11 +443,11 @@ export const ialarmMqtt = (config) => {
   function removeDisabledZones (zones, showUnnamedZones) {
     return zones.filter(z => {
       if (!z.typeId || z.typeId <= 0) {
-        logger.info(`removeDisabledZones: filtering out zone ${z.id} with typeId disabled`, z)
+        logger.debug(`removeDisabledZones: filtering out zone ${z.id} with typeId disabled`, z)
         return false
       }
       if (!showUnnamedZones && !z.name) {
-        logger.info(`removeDisabledZones: filtering out zone ${z.id} with empty name`, z)
+        logger.debug(`removeDisabledZones: filtering out zone ${z.id} with empty name`, z)
         return false
       }
       return true
