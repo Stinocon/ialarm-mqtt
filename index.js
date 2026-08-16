@@ -176,8 +176,10 @@ export const ialarmMqtt = (config) => {
 
       // once received GetNet and GetZones we are ready to start discovery
       if (zonesCache.zones && !discovered) {
-        // home assistant discovery (if enabled)
-        discovery(config.hadiscovery.enabled)
+        // home assistant discovery (if enabled). No reset unless asked for:
+        // clearing the configs deletes and recreates every entity, which shows
+        // up as an "unknown" gap in their history at every restart.
+        discovery(config.hadiscovery.enabled, config.hadiscovery.resetOnStart)
       }
     } catch (error) {
       handleError(error)
@@ -517,13 +519,19 @@ export const ialarmMqtt = (config) => {
     }
   }
 
-  function discovery (enabled) {
+  /**
+   * @param {*} enabled publish the entity configs
+   * @param {*} reset clear every /config topic first, deleting and recreating
+   * the entities in Home Assistant. Off on start-up: it left a gap in the
+   * entity history on every restart. See config.hadiscovery.resetOnStart.
+   */
+  function discovery (enabled, reset) {
     // clean errors
     publisher.publishConnectionStatus(!MeianConnection.status.isDisconnected(), 'OK')
 
     // home assistant mqtt discovery (if not enabled it will reset all /config topics)
-    logger.info(`Calling discovery with enabled=${enabled}, zones=${Object.values(zonesCache.zones).length}`)
-    publisher.publishHomeAssistantMqttDiscovery(Object.values(zonesCache.zones), enabled, config.deviceInfo)
+    logger.info(`Calling discovery with enabled=${enabled}, reset=${!!reset}, zones=${Object.values(zonesCache.zones).length}`)
+    publisher.publishHomeAssistantMqttDiscovery(Object.values(zonesCache.zones), enabled, config.deviceInfo, reset)
     if (!enabled) {
       logger.warn('Home assistant discovery disabled (empty config.hadiscovery)')
     }

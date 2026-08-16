@@ -185,6 +185,11 @@ function initDefaults (config, configFile) {
     _checkConfig(config, ['hadiscovery', 'sensors_qos'], 0, config.topics.sensors_qos || (config.topics.sensors && config.topics.sensors.sensors_qos) || 0)
     _checkConfig(config, ['hadiscovery', 'code'], 0, '')
     _checkConfig(config, ['hadiscovery', 'supportedFeatures'], 0, ['arm_home', 'arm_away'])
+    // clearing every /config topic on start deletes and recreates the entities:
+    // Home Assistant shows them unknown for a few seconds and their history is
+    // interrupted. Off by default; use the "Discovery Reset" switch when you
+    // actually need the cleanup (e.g. after disabling a feature).
+    _checkConfig(config, ['hadiscovery', 'resetOnStart'], 0, false)
 
     // default device_class mappings and old config cleanup
     if (config.hadiscovery &&
@@ -317,6 +322,11 @@ export const configHandler = {
     config.hadiscovery.bypass = hassos.bypass || hassos.hadiscovery.bypass
     config.hadiscovery.supportedFeatures =
       hassos.supportedFeatures || (hassos.hadiscovery && hassos.hadiscovery.supportedFeatures) || ['arm_home', 'arm_away']
+    // booleans need an explicit check: `||` would turn a deliberate false into the default
+    const resetOnStart = hassos.resetOnStart !== undefined
+      ? hassos.resetOnStart
+      : (hassos.hadiscovery || {}).resetOnStart
+    config.hadiscovery.resetOnStart = resetOnStart !== undefined ? resetOnStart : false
 
     // merge zones
     config.zones = hassos.zones

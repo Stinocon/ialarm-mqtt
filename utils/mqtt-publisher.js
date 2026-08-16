@@ -222,7 +222,9 @@ export const MqttPublisher = function (config) {
         logger.info('Requested new HA discovery...')
         if (alarmCommands.discovery && command) {
           const on = command && (command.toLowerCase() === 'on' || command === 1 || command === 'true' || command === true)
-          alarmCommands.discovery(on)
+          // asking over MQTT (the "Discovery Reset" switch) is the explicit
+          // request to clear the configs first
+          alarmCommands.discovery(on, true)
         }
         _publish(config.topics.alarm.configStatus, {
           cacheClear: 'OFF',
@@ -490,9 +492,21 @@ export const MqttPublisher = function (config) {
     _publish(m.topic, m.payload)
   }
 
-  this.publishHomeAssistantMqttDiscovery = function (zones, on, deviceInfo) {
+  /**
+   * @param {*} zones
+   * @param {*} on publish the entity configs
+   * @param {*} deviceInfo
+   * @param {*} reset clear every /config topic first. Deleting and recreating
+   * the entities makes Home Assistant show them as unknown for a few seconds
+   * and leaves a hole in their history, so it only happens on an explicit
+   * request (the "Discovery Reset" switch) or when discovery is disabled and
+   * cleanup is the whole point.
+   */
+  this.publishHomeAssistantMqttDiscovery = function (zones, on, deviceInfo, reset) {
     const now = Date.now()
-    logger.info(`Discovery called: on=${on}, zones=${zones ? zones.length : 0}, discoveryInProgress=${discoveryInProgress}`)
+    // with discovery off, clearing the configs is the only meaningful action
+    reset = reset || !on
+    logger.info(`Discovery called: on=${on}, reset=${reset}, zones=${zones ? zones.length : 0}, discoveryInProgress=${discoveryInProgress}`)
     
     // 🚨 EMERGENCY DEBUG LOGGING
     logger.info(`=== DISCOVERY DEBUG ===`)
@@ -540,11 +554,15 @@ export const MqttPublisher = function (config) {
     
     // ✅ FIX: Genera tutti i messaggi prima di pubblicare
     try {
-      logger.info('Creating reset messages...')
-      const discoveryInstanceReset = new IAlarmHaDiscovery(config, zones, true, deviceInfo)
-      resetMessages = discoveryInstanceReset.createMessages()
-      logger.info(`Created ${resetMessages.length} reset messages`)
-      
+      if (reset) {
+        logger.info('Creating reset messages...')
+        const discoveryInstanceReset = new IAlarmHaDiscovery(config, zones, true, deviceInfo)
+        resetMessages = discoveryInstanceReset.createMessages()
+        logger.info(`Created ${resetMessages.length} reset messages`)
+      } else {
+        logger.info('Skipping discovery reset: entities are updated in place (no history gap)')
+      }
+
       if (on) {
         logger.info('Creating discovery messages...')
         const discoveryInstanceMain = new IAlarmHaDiscovery(config, zones, false, deviceInfo)
@@ -581,8 +599,11 @@ export const MqttPublisher = function (config) {
       return
     }
 
-    // Fase 2: Pubblica discovery messages dopo delay
-    logger.info('Setting up Home Assistant discovery...')
+    // Fase 2: Pubblica discovery messages dopo delay.
+    // Il delay serve solo a dare tempo ad HA di processare il cleanup: senza
+    // reset non c'è niente da attendere.
+    const publishDelay = resetMessages.length > 0 ? 5000 : 0
+    logger.info(`Setting up Home Assistant discovery (delay ${publishDelay}ms)...`)
     setTimeout(function () {
       logger.info(`Publishing HA discovery entities for ${discoveryMessages.length} topics`)
       
@@ -600,7 +621,7 @@ export const MqttPublisher = function (config) {
       discoveryInProgress = false
       lastDiscoveryCompletedAt = Date.now()
       logger.info(`Discovery process completed successfully!`)
-    }, 5000)
+    }, publishDelay)
   }
 
   // Function to force reset discovery flag (useful for debugging)

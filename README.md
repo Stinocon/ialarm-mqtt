@@ -19,6 +19,7 @@ This fork provides **critical fixes and improvements** over the original:
 | **Arm modes** | Full list (shows Night/Vacation/Custom buttons) | ✅ **Configurable `supported_features`** (default Home/Away) |
 | **Zone ID mapping** | ❌ Not exposed | ✅ **Zone ID sensor + `id → name` directory** (`zoneId` feature) |
 | **Bridge health** | ❌ Add-on log only | ✅ **Diagnostic entities** (link health, last poll, error counters — `diagnostics` feature) |
+| **Discovery on restart** | ❌ Deletes and recreates every entity | ✅ **Updated in place** — no history gap (`hadiscovery.resetOnStart`) |
 | **Connection** | Single connection only | ⚠️ **Single connection only** (hardware limitation) |
 
 > ⚠️ **Disclaimer — "vibecoded" fork.** All enhancements and fixes in this fork (vs the
@@ -96,8 +97,11 @@ node ./bin/ialarm-mqtt.js -c /path/to/config/folder
 **Note:** Replace `{prefix}` with your configured `branding.prefix` value (default: `ialarm-v2`).
 
 Behavior notes:
-- On start, a cleanup is sent once; the actual discovery is sent once (guarded) with a short delay to let HA process the cleanup.
+- On start the entity configs are published straight away and Home Assistant updates the existing entities in place. No cleanup is sent, so entities are never deleted and recreated and their history has no gap.
+- A cleanup **is** sent when you ask for one over `{prefix}/alarm/discovery` (the **Discovery Reset** switch), or when discovery is disabled in config — there, clearing the configs is the whole point. After a cleanup the entity configs follow 5 seconds later, to give HA time to process it.
+- Set `hadiscovery.resetOnStart: true` to restore the old behaviour (cleanup at every start). You only need it if you routinely disable features and want the orphaned entities removed automatically; the Discovery Reset switch does the same on demand.
 - Rapid re-triggers are ignored during a short cooldown to prevent duplicate discovery.
+- The cleanup covers all 128 addressable zones, so it is roughly a thousand MQTT messages: skipping it on start is also why start-up is quieter.
 
 ## Breaking change compliance (HA 2024.2+ naming rules)
 Home Assistant 2024.2+ forbids entity names equal to, or starting with, the device name. This project now:

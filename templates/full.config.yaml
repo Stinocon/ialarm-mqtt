@@ -157,6 +157,7 @@ hadiscovery:
   supportedFeatures:
     - arm_home
     - arm_away
+  resetOnStart: false
   sensors_qos: 0
   code: ""
   zones:
